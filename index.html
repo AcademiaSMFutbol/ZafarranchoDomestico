@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zafarrancho Doméstico - MVP Final</title>
+    <title>Zafarrancho Doméstico - Fighting Engine</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #ui { position: absolute; top: 15px; width: 90%; display: none; justify-content: space-between; z-index: 10; pointer-events: none; }
-        .health-bar { width: 140px; height: 16px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 8px; overflow: hidden; }
-        .fill { width: 100%; height: 100%; transition: width 0.3s; }
-        #p1-fill { background: #3498db; box-shadow: 0 0 10px #3498db; }
-        #cpu-fill { background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
-        #fs-btn { position: absolute; top: 10px; right: 10px; z-index: 1000; background: rgba(255,255,255,0.3); border: 2px solid #fff; color: white; font-size: 20px; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #ui { position: absolute; top: 15px; width: 100%; display: none; justify-content: space-around; z-index: 10; pointer-events: none; }
+        .health-bar { width: 160px; height: 18px; background: #333; border: 2px solid #fff; border-radius: 4px; }
+        .fill { width: 100%; height: 100%; transition: width 0.2s; }
+        #p1-fill { background: #00ccff; }
+        #cpu-fill { background: #ff3300; }
+        #fs-btn { position: absolute; bottom: 10px; left: 10px; z-index: 1000; background: #fff; border: none; padding: 10px; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <button id="fs-btn">⛶ Fullscreen</button>
+    <button id="fs-btn">PANTALLA COMPLETA</button>
     <div id="ui">
-        <div><div class="health-bar"><div id="p1-fill" class="fill"></div></div></div>
-        <div><div class="health-bar"><div id="cpu-fill" class="fill"></div></div></div>
+        <div class="health-bar"><div id="p1-fill" class="fill"></div></div>
+        <div class="health-bar"><div id="cpu-fill" class="fill"></div></div>
     </div>
     <div id="game-container"></div>
 
@@ -35,20 +35,15 @@
             create() {
                 const W = this.cameras.main.width;
                 const H = this.cameras.main.height;
-                
                 this.add.image(W/2, H/2, 'fondo').setDisplaySize(W, H);
                 this.generarTexturas();
 
-                // Pantalla de Inicio
                 this.setupMenu(W, H);
 
-                // Jugadores
-                this.player = this.physics.add.sprite(W*0.2, H-100, 'dude').setScale(2.8).setTint(0x3498db);
-                this.cpu = this.physics.add.sprite(W*0.8, H-100, 'dude').setScale(2.8).setTint(0xe74c3c);
+                this.player = this.physics.add.sprite(W*0.2, H-100, 'dude').setScale(2.8).setTint(0x00ccff);
+                this.cpu = this.physics.add.sprite(W*0.8, H-100, 'dude').setScale(2.8).setTint(0xff3300);
                 this.player.hp = 100; this.cpu.hp = 100;
-                this.player.setCollideWorldBounds(true);
-                this.cpu.setCollideWorldBounds(true);
-
+                
                 let ground = this.physics.add.staticGroup();
                 ground.create(W/2, H-20, null).setDisplaySize(W, 40).setAlpha(0).refreshBody();
                 this.physics.add.collider([this.player, this.cpu], ground);
@@ -56,32 +51,24 @@
                 this.projectiles = this.physics.add.group();
                 this.physics.add.overlap(this.projectiles, [this.player, this.cpu], this.onHit, null, this);
 
-                this.isStarted = false;
-                
-                // Animaciones corregidas
                 this.anims.create({ key: 'walk', frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }), frameRate: 12, repeat: -1 });
-                this.anims.create({ key: 'idle', frames: [ { key: 'dude', frame: 4 } ], frameRate: 20 });
-                this.anims.create({ key: 'turn-left', frames: [ { key: 'dude', frame: 0 } ], frameRate: 20 });
-                this.anims.create({ key: 'turn-right', frames: [ { key: 'dude', frame: 5 } ], frameRate: 20 });
+                this.anims.create({ key: 'idle', frames: [ { key: 'dude', frame: 4 } ], frameRate: 1 });
+                
+                this.isStarted = false;
             }
 
             setupMenu(W, H) {
-                this.menuGroup = this.add.container(0, 0).setZ(100);
-                let bg = this.add.rectangle(W/2, H/2, W, H, 0x1a1a1a, 0.9);
-                let btn = this.add.rectangle(W/2, H/2, 250, 70, 0x2ecc71).setInteractive();
-                let txt = this.add.text(W/2, H/2, 'INICIAR BATALLA', { fontSize: '24px', fontStyle: 'bold' }).setOrigin(0.5);
-                
-                this.menuGroup.add([bg, btn, txt]);
-
-                btn.on('pointerdown', () => this.startGame());
-            }
-
-            startGame() {
-                this.menuGroup.destroy();
-                document.getElementById('ui').style.display = 'flex';
-                this.isStarted = true;
-                this.setupControls();
-                this.time.addEvent({ delay: 1800, callback: () => { if(this.isStarted) this.fire(this.cpu); }, loop: true });
+                this.menu = this.add.container(0,0).setZ(100);
+                let bg = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.8);
+                let txt = this.add.text(W/2, H/2, 'TOCA PARA PELEAR', { fontSize: '32px', color: '#00ff00' }).setOrigin(0.5).setInteractive();
+                this.menu.add([bg, txt]);
+                txt.on('pointerdown', () => {
+                    this.menu.destroy();
+                    document.getElementById('ui').style.display = 'flex';
+                    this.isStarted = true;
+                    this.setupControls();
+                    this.time.addEvent({ delay: 1500, callback: () => this.fire(this.cpu), loop: true });
+                });
             }
 
             setupControls() {
@@ -90,70 +77,57 @@
                 this.moveDir = 0;
 
                 let bL = this.add.rectangle(W*0.15, H*0.8, W*0.3, H*0.4, 0xffffff, 0.01).setInteractive();
-                this.add.text(W*0.1, H*0.75, '⬅️', {fontSize:'40px'});
-                bL.on('pointerdown', () => this.moveDir = -1);
-                bL.on('pointerup', () => this.moveDir = 0);
+                bL.on('pointerdown', () => this.moveDir = -1).on('pointerup', () => this.moveDir = 0);
 
                 let bR = this.add.rectangle(W*0.45, H*0.8, W*0.3, H*0.4, 0xffffff, 0.01).setInteractive();
-                this.add.text(W*0.4, H*0.75, '➡️', {fontSize:'40px'});
-                bR.on('pointerdown', () => this.moveDir = 1);
-                bR.on('pointerup', () => this.moveDir = 0);
+                bR.on('pointerdown', () => this.moveDir = 1).on('pointerup', () => this.moveDir = 0);
 
                 let bD = this.add.rectangle(W*0.7, H*0.8, W*0.2, H*0.4, 0xffff00, 0.1).setInteractive();
-                this.add.text(W*0.68, H*0.75, '🛡️', {fontSize:'30px'});
-                bD.on('pointerdown', () => this.player.isDefending = true);
-                bD.on('pointerup', () => this.player.isDefending = false);
+                bD.on('pointerdown', () => this.player.isDefending = true).on('pointerup', () => this.player.isDefending = false);
 
                 let bF = this.add.rectangle(W*0.9, H*0.8, W*0.2, H*0.4, 0xff0000, 0.2).setInteractive();
-                this.add.text(W*0.88, H*0.75, '💥', {fontSize:'40px'});
                 bF.on('pointerdown', () => this.fire(this.player));
             }
 
             generarTexturas() {
-                const draw = (key, w, h, col) => {
+                const draw = (k, w, h, c) => {
                     let g = this.make.graphics({x:0,y:0,add:false});
-                    g.fillStyle(col, 1); g.fillRoundedRect(0,0,w,h,6);
-                    g.generateTexture(key, w, h);
+                    g.fillStyle(c, 1); g.fillRoundedRect(0,0,w,h,4);
+                    g.generateTexture(k, w, h);
                 };
-                draw('cojin', 34, 28, 0x3498db);
-                draw('mando', 28, 10, 0x2c3e50);
-                draw('libro', 22, 30, 0x9b59b6);
-                draw('jarron', 20, 32, 0xecf0f1);
+                draw('cojin', 30, 30, 0x3498db); draw('mando', 25, 10, 0x2c3e50);
+                draw('libro', 20, 30, 0x9b59b6); draw('jarron', 18, 32, 0xecf0f1);
             }
 
             update() {
                 if(!this.isStarted) return;
 
+                // Lógica de Lucha Profesional: Siempre mirar al oponente
+                let isToLeft = this.player.x < this.cpu.x;
+                this.player.setFlipX(!isToLeft);
+                this.cpu.setFlipX(this.player.x < this.cpu.x);
+
                 if(this.player.isDefending) {
                     this.player.setVelocityX(0);
                     this.player.setAlpha(0.5);
+                    this.player.setFrame(1);
                 } else {
                     this.player.setAlpha(1);
                     this.player.setVelocityX(this.moveDir * 280);
-                    
                     if(this.moveDir !== 0) {
-                        // Orientación corregida según el movimiento
-                        this.player.setFlipX(this.moveDir < 0);
                         this.player.anims.play('walk', true);
                     } else {
-                        // Al estar quieto, mira hacia el rival (CPU)
-                        this.player.setFlipX(this.player.x > this.cpu.x);
                         this.player.anims.play('idle');
                     }
                 }
-                this.cpu.setFlipX(this.cpu.x > this.player.x);
             }
 
             fire(who) {
                 if(who.hp <= 0 || who.isDefending) return;
-                const types = [
-                    {k:'cojin', d:4, s:450}, {k:'mando', d:10, s:600}, 
-                    {k:'libro', d:8, s:500}, {k:'jarron', d:18, s:380}
-                ];
+                const types = [{k:'cojin',d:4,s:450}, {k:'mando',d:10,s:600}, {k:'libro',d:8,s:500}, {k:'jarron',d:18,s:380}];
                 let t = types[Math.floor(Math.random()*types.length)];
                 let obj = this.projectiles.create(who.x, who.y - 10, t.k);
-                obj.damage = t.d;
-                obj.owner = who;
+                obj.damage = t.d; obj.owner = who;
                 let dir = who.flipX ? -1 : 1;
                 obj.setVelocity(t.s * dir, -150);
                 obj.setAngularVelocity(400);
@@ -161,34 +135,23 @@
 
             onHit(target, obj) {
                 if(obj.owner === target) return;
-                let dmg = target.isDefending ? Math.floor(obj.damage * 0.2) : obj.damage;
-                target.hp -= dmg;
+                target.hp -= target.isDefending ? Math.floor(obj.damage*0.2) : obj.damage;
                 obj.destroy();
-
                 let bar = (target === this.player) ? 'p1-fill' : 'cpu-fill';
                 document.getElementById(bar).style.width = target.hp + "%";
-
-                if(target.hp <= 0) {
-                    this.isStarted = false;
-                    this.scene.restart();
-                }
+                if(target.hp <= 0) location.reload();
             }
         }
 
-        const config = {
+        new Phaser.Game({
             type: Phaser.AUTO, width: window.innerWidth, height: window.innerHeight,
             parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 700 } } },
             scene: MainScene
-        };
-        new Phaser.Game(config);
+        });
 
-        // Gestión manual de Pantalla Completa
         document.getElementById('fs-btn').onclick = () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
         };
     </script>
 </body>
