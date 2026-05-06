@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Zafarrancho Doméstico</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Boogaloo&display=swap');
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --c-p1: #3d9eff;
+  --c-p2: #ff4d4d;
+  --c-gold: #f5c518;
+  --c-bg: #0a0a14;
+  --c-surface: #12121f;
+  --radius: 18px;
+}
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background:var(--c-bg);
+  font-family:'Boogaloo','Comic Sans MS',sans-serif;
+  color:#fff;
+  touch-action:none;
+}
+
+/* ══ HUD ══════════════════════════════════════════════════ */
+#hud {
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  pointer-events:none;
+  padding:6px 10px 0;
+  display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
+}
+.hud-player { flex:1; display:flex; flex-direction:column; gap:3px; }
+.hud-player.right { align-items:flex-end; }
+.hud-name {
+  font-family:'Bangers',cursive;
+  font-size:clamp(12px,3.5vw,17px);
+  letter-spacing:2px; line-height:1;
+}
+.hud-name.p1 { color:var(--c-p1); }
+.hud-name.p2 { color:var(--c-p2); }
+.bar-wrap {
+  width:100%; height:9px;
+  background:rgba(255,255,255,.1); border-radius:10px; overflow:hidden;
+}
+.bar-fill { height:100%; border-radius:10px; transition:width .22s linear, background .4s; }
+#hp1-fill  { background:var(--c-p1); width:100%; }
+#hp2-fill  { background:var(--c-p2); width:100%; }
+#pow1-fill { background:var(--c-gold); width:0%; }
+#pow2-fill { background:var(--c-gold); width:0%; }
+.bar-wrap.power { height:5px; opacity:.8; }
+.hud-weapon { font-size:clamp(10px,2.5vw,13px); opacity:.65; margin-top:1px; }
+/* Timer */
+#hud-center {
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  pointer-events:none; padding-top:2px; min-width:46px;
+}
+#timer-val {
+  font-family:'Bangers',cursive;
+  font-size:clamp(22px,6vw,34px); line-height:1; color:#fff; transition:color .3s;
+}
+#round-label { font-size:9px; letter-spacing:1px; opacity:.4; text-transform:uppercase; }
+
+/* ══ CANVAS ════════════════════════════════════════════════ */
+#game-wrap {
+  position:fixed; inset:0; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+}
+#game-wrap canvas { display:block; }
+
+/* ══ CONTROLES TÁCTILES ════════════════════════════════════
+   Posición: fixed bottom, encima del canvas.
+   pointer-events:none en el wrapper, auto en los hijos.
+══════════════════════════════════════════════════════════ */
+#touch-controls {
+  position:fixed; bottom:0; left:0; right:0; z-index:10;
+  height:var(--ctrl-h, 150px);
+  display:flex; justify-content:space-between; align-items:flex-end;
+  padding:0 10px 10px;
+  pointer-events:none;
+}
+
+/* D-Pad */
+#dpad {
+  position:relative;
+  width:var(--dpad-sz, 138px); height:var(--dpad-sz, 138px);
+  pointer-events:none; flex-shrink:0;
+}
+.dp {
+  position:absolute; pointer-events:auto;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px;
+  background:rgba(255,255,255,.07);
+  border:2px solid rgba(255,255,255,.13);
+  border-radius:12px;
+  transition:background .08s, transform .07s;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer; user-select:none;
+}
+.dp.active, .dp:active {
+  background:rgba(61,158,255,.32);
+  transform:scale(.9);
+}
+/* celdas 1/3 del dpad */
+#dp-up    { top:0;   left:33.3%; width:33.4%; height:33.3%; border-radius:12px 12px 4px 4px; }
+#dp-left  { top:33.3%; left:0;   width:33.3%; height:33.4%; border-radius:12px 4px 4px 12px; }
+#dp-right { top:33.3%; right:0;  width:33.3%; height:33.4%; border-radius:4px 12px 12px 4px; }
+/* Centro decorativo */
+#dp-center {
+  position:absolute; top:33.3%; left:33.3%;
+  width:33.4%; height:33.4%; border-radius:50%;
+  background:rgba(255,255,255,.04);
+  border:2px solid rgba(255,255,255,.08);
+}
+
+/* Botones */
+#btns {
+  display:flex; flex-direction:column; gap:7px;
+  align-items:flex-end; pointer-events:auto; flex-shrink:0;
+}
+.btn-row { display:flex; gap:7px; }
+.btn-action {
+  pointer-events:auto; border:none;
+  border-radius:var(--radius);
+  font-family:'Bangers',cursive; letter-spacing:2px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  transition:transform .08s; user-select:none;
+  box-shadow:0 4px 0 rgba(0,0,0,.45);
+  white-space:nowrap;
+}
+.btn-action:active {
+  transform:translateY(4px);
+  box-shadow:0 1px 0 rgba(0,0,0,.45);
+}
+#btn-attack {
+  background:linear-gradient(135deg,#e74c3c,#c0392b); color:#fff;
+  font-size:clamp(15px,4vw,20px);
+  padding:clamp(9px,2.5vw,14px) clamp(16px,4.5vw,26px);
+}
+#btn-defend {
+  background:linear-gradient(135deg,#2980b9,#1a5276); color:#fff;
+  font-size:clamp(12px,3.2vw,16px);
+  padding:clamp(7px,2vw,11px) clamp(12px,3.5vw,20px);
+}
+#btn-special {
+  background:linear-gradient(135deg,#f5c518,#d4ac0d); color:#111;
+  font-size:clamp(12px,3.2vw,16px);
+  padding:clamp(7px,2vw,11px) clamp(12px,3.5vw,20px);
+  opacity:.3;
+  transition:opacity .4s, transform .08s, box-shadow .08s;
+}
+#btn-special.ready {
+  opacity:1;
+  animation:special-pulse 1.1s ease-in-out infinite;
+}
+@keyframes special-pulse {
+  0%,100%{ box-shadow:0 4px 0 rgba(0,0,0,.45),0 0 0 rgba(245,197,24,0); }
+  50%    { box-shadow:0 4px 0 rgba(0,0,0,.45),0 0 16px rgba(245,197,24,.6); }
+}
+#btn-weapon {
+  background:linear-gradient(135deg,#8e44ad,#6c3483); color:#fff;
+  font-size:clamp(10px,2.8vw,13px);
+  padding:clamp(5px,1.5vw,8px) clamp(9px,2.5vw,14px);
+}
+
+/* ══ SCREENS ════════════════════════════════════════════════ */
+.screen {
+  position:fixed; inset:0; z-index:50;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:12px;
+  background:rgba(8,8,20,.93);
+  backdrop-filter:blur(6px);
+  text-align:center; padding:20px;
+  transition:opacity .45s;
+}
+.screen.hidden { opacity:0; pointer-events:none; }
+.screen-title {
+  font-family:'Bangers',cursive;
+  font-size:clamp(34px,10vw,68px);
+  letter-spacing:4px;
+  text-shadow:4px 4px 0 #e74c3c, -2px -2px 0 #3498db;
+  line-height:1.05;
+}
+.screen-sub { font-size:clamp(12px,3.2vw,15px); opacity:.6; max-width:300px; letter-spacing:.5px; }
+.input-hint {
+  font-size:clamp(10px,2.5vw,12px); opacity:.35; letter-spacing:1.5px; text-transform:uppercase;
+}
+.screen-btn {
+  background:#27ae60; color:#fff; border:none; border-radius:30px;
+  font-family:'Bangers',cursive;
+  font-size:clamp(17px,5vw,24px); letter-spacing:2px;
+  padding:11px 34px; cursor:pointer;
+  box-shadow:0 5px 0 #1a7a42;
+  transition:transform .1s, box-shadow .1s;
+  -webkit-tap-highlight-color:transparent;
+}
+.screen-btn:active { transform:translateY(4px); box-shadow:0 1px 0 #1a7a42; }
+
+/* resultado */
+#result-icon { font-size:56px; }
+#result-title {
+  font-family:'Bangers',cursive;
+  font-size:clamp(26px,8vw,50px); letter-spacing:3px;
+}
+#result-detail { font-size:clamp(11px,3vw,14px); opacity:.55; }
+
+/* damage popup */
+.dmg-popup {
+  position:fixed; pointer-events:none;
+  font-family:'Bangers',cursive; font-size:20px;
+  text-shadow:2px 2px 0 #000; z-index:20;
+  animation:popUp .8s ease forwards;
+}
+@keyframes popUp {
+  0%  { opacity:1; transform:translateY(0) scale(1); }
+  100%{ opacity:0; transform:translateY(-52px) scale(1.25); }
+}
+
+/* grilla fondo */
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(61,158,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg,rgba(61,158,255,.045) 1px,transparent 1px);
+  background-size:44px 44px;
+  animation:gridDrift 14s linear infinite;
+  z-index:0; pointer-events:none;
+}
+@keyframes gridDrift {
+  from{ background-position:0 0; }
+  to  { background-position:44px 44px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-player">
+    <div class="hud-name p1">👤 TÚ</div>
+    <div class="bar-wrap"><div class="bar-fill" id="hp1-fill"></div></div>
+    <div class="bar-wrap power"><div class="bar-fill" id="pow1-fill"></div></div>
+    <div class="hud-weapon" id="p1-weapon">🛋️ Cojín</div>
+  </div>
+  <div id="hud-center">
+    <div id="timer-val">60</div>
+    <div id="round-label">tiempo</div>
+  </div>
+  <div class="hud-player right">
+    <div class="hud-name p2">🤖 CPU</div>
+    <div class="bar-wrap"><div class="bar-fill" id="hp2-fill"></div></div>
+    <div class="bar-wrap power"><div class="bar-fill" id="pow2-fill"></div></div>
+    <div class="hud-weapon" id="p2-weapon">🍳 Sartén</div>
+  </div>
+</div>
+
+<!-- Canvas -->
+<div id="game-wrap"></div>
+
+<!-- Controles táctiles -->
+<div id="touch-controls">
+  <div id="dpad">
+    <div class="dp" id="dp-up">▲</div>
+    <div class="dp" id="dp-left">◀</div>
+    <div id="dp-center"></div>
+    <div class="dp" id="dp-right">▶</div>
+  </div>
+  <div id="btns">
+    <div class="btn-row">
+      <button class="btn-action" id="btn-weapon">🔄 ARMA</button>
+      <button class="btn-action" id="btn-special">⚡ ESPECIAL</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-action" id="btn-defend">🛡 DEF</button>
+      <button class="btn-action" id="btn-attack">⚔ ATACAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pantalla inicio -->
+<div class="screen" id="screen-start">
+  <div class="screen-title">ZAFARRANCHO<br>DOMÉSTICO</div>
+  <div class="screen-sub">Lanza objetos del hogar y derrota a la CPU antes de que acabe el tiempo.</div>
+  <div class="input-hint">Táctil · Teclado · Mando TV</div>
+  <button class="screen-btn" id="btn-start">▶ EMPEZAR</button>
+</div>
+
+<!-- Pantalla resultado -->
+<div class="screen hidden" id="screen-result">
+  <div id="result-icon">🏆</div>
+  <div id="result-title">¡GANASTE!</div>
+  <div id="result-detail"></div>
+  <button class="screen-btn" onclick="location.reload()">🔁 REVANCHA</button>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   CATÁLOGO DE ARMAS
+   Para usar PNGs propios: en preload() sustituye
+   generateEmojiTexture(w) por this.load.image(w.key, 'assets/'+w.key+'.png')
+═══════════════════════════════════════════════════════════ */
+const WEAPONS = [
+  { key:'cushion',    emoji:'🛋️', label:'Cojín',        dmg:8,  spd:360, vy:-55,  grav:170, mass:1.3, bounce:.25 },
+  { key:'book',       emoji:'📚', label:'Libro',         dmg:13, spd:440, vy:-35,  grav:240, mass:1.0, bounce:.1  },
+  { key:'vase',       emoji:'🏺', label:'Jarrón',        dmg:20, spd:455, vy:-85,  grav:290, mass:.8,  bounce:.05 },
+  { key:'tv-remote',  emoji:'📺', label:'Mando TV',      dmg:7,  spd:530, vy:-28,  grav:210, mass:.6,  bounce:.3  },
+  { key:'controller', emoji:'🎮', label:'Mando Consola', dmg:11, spd:510, vy:-48,  grav:195, mass:.7,  bounce:.2  },
+  { key:'pan',        emoji:'🍳', label:'Sartén',        dmg:25, spd:305, vy:-115, grav:340, mass:2.0, bounce:.15 },
+  { key:'pot',        emoji:'🫕', label:'Cacerola',      dmg:29, spd:265, vy:-135, grav:390, mass:2.5, bounce:.1  },
+  { key:'shoe',       emoji:'👞', label:'Zapato',        dmg:9,  spd:490, vy:-65,  grav:230, mass:.9,  bounce:.35 },
+  { key:'bucket',     emoji:'🪣', label:'Cubo de Agua',  dmg:6,  spd:335, vy:-50,  grav:155, mass:1.2, bounce:.05 },
+];
+const SPECIAL = { key:'special', emoji:'💥', label:'¡SÚPER!', dmg:44, spd:640, vy:0, grav:-60, mass:.5, bounce:0 };
+
+/* ═══════════════════════════════════════════════════════════
+   FLAG GLOBAL DE INICIO — fuera de Phaser para que el botón
+   DOM lo pueda activar sin depender del ciclo de la escena.
+═══════════════════════════════════════════════════════════ */
+let GAME_START_REQUESTED = false;
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT UNIFICADO  (Touch · Teclado · Gamepad)
+   El juego sólo lee este objeto — no importa la fuente.
+═══════════════════════════════════════════════════════════ */
+const INPUT = {
+  left:false, right:false, up:false, defend:false,
+  // "edge flags": se activan una vez y se limpian al final del frame
+  _attack:false, _special:false, _weapon:false,
+  // estado interno gamepad (previo) — no leer fuera de pollGamepad()
+  _gp:{ a:false, x:false, y:false },
+};
+
+/* ── Touch ─────────────────────────────────────────────── */
+function bindHold(el, key) {
+  const on  = e=>{ e.preventDefault(); INPUT[key]=true;  };
+  const off = e=>{ e.preventDefault(); INPUT[key]=false; };
+  el.addEventListener('touchstart', on,  {passive:false});
+  el.addEventListener('touchend',   off, {passive:false});
+  el.addEventListener('touchcancel',off, {passive:false});
+  el.addEventListener('mousedown',  on);
+  el.addEventListener('mouseup',    off);
+  el.addEventListener('mouseleave', off);
+}
+function bindEdge(el, flag) {
+  const fn = e=>{ e.preventDefault(); INPUT[flag]=true; };
+  el.addEventListener('touchstart', fn, {passive:false});
+  el.addEventListener('mousedown',  fn);
+}
+bindHold(document.getElementById('dp-left'),   'left');
+bindHold(document.getElementById('dp-right'),  'right');
+bindHold(document.getElementById('dp-up'),     'up');
+bindHold(document.getElementById('btn-defend'),'defend');
+bindEdge(document.getElementById('btn-attack'), '_attack');
+bindEdge(document.getElementById('btn-special'),'_special');
+bindEdge(document.getElementById('btn-weapon'), '_weapon');
+
+// ── Botón EMPEZAR — DOM puro, sin depender de Phaser ──────
+;(function(){
+  const btn = document.getElementById('btn-start');
+  function doStart(e){
+    e.preventDefault();
+    if(GAME_START_REQUESTED) return;
+    GAME_START_REQUESTED = true;
+    btn.disabled = true;
+    btn.textContent = '⏳ INICIANDO...';
+  }
+  btn.addEventListener('touchend', doStart, {passive:false});
+  btn.addEventListener('click',    doStart);
+})();
+
+// Feedback visual en dpad
+['dp-left','dp-right','dp-up'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', ()=>el.classList.add('active'),    {passive:true});
+  el.addEventListener('touchend',   ()=>el.classList.remove('active'), {passive:true});
+  el.addEventListener('touchcancel',()=>el.classList.remove('active'), {passive:true});
+});
+
+/* ── Teclado (PC + Smart TV con teclado USB / CEC) ─────── */
+/*   Smart TV: las teclas de cursor suelen mapear a ArrowUp/Down/Left/Right.
+     Botón OK = Enter. Botón Back = Backspace / Escape.
+     Botón de color (rojo/verde...) = F1-F4 en algunos modelos (Samsung, LG).  */
+const KEYMAP = {
+  ArrowLeft:'left',  KeyA:'left',
+  ArrowRight:'right',KeyD:'right',
+  ArrowUp:'up',      KeyW:'up',   Space:'up',
+  // Edge
+  KeyZ:'_attack',    Enter:'_attack', NumpadEnter:'_attack',
+  KeyX:'defend',
+  KeyS:'_special',   F1:'_special',
+  KeyQ:'_weapon',    Tab:'_weapon',   F2:'_weapon',
+};
+const heldKeys = new Set();
+window.addEventListener('keydown', e=>{
+  if(heldKeys.has(e.code)) return;
+  heldKeys.add(e.code);
+  const k = KEYMAP[e.code];
+  if(!k) return;
+  INPUT[k] = true;
+  if(['Space','ArrowUp','ArrowLeft','ArrowRight','Tab'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e=>{
+  heldKeys.delete(e.code);
+  const k = KEYMAP[e.code];
+  if(k && !k.startsWith('_')) INPUT[k] = false;
+});
+
+/* ── Gamepad / Mando TV Bluetooth ──────────────────────── */
+/*   Estándar W3C Gamepad API.
+     Muchos mandos de Smart TV (Samsung, LG, Sony) se emparejan como
+     gamepad genérico vía Bluetooth. El mapeo estándar es:
+       Axes[0]: stick izq H  |  Axes[1]: stick izq V
+       Btn 0 (A/OK)  → atacar
+       Btn 1 (B)     → defender
+       Btn 2 (X)     → especial
+       Btn 3 (Y)     → cambiar arma
+       Btn 12 D-↑    → saltar
+       Btn 13 D-↓    → (sin uso en MVP)
+       Btn 14 D-←    → mover izq
+       Btn 15 D-→    → mover der
+*/
+let gpIdx = -1;
+window.addEventListener('gamepadconnected',    e=>{ gpIdx=e.gamepad.index; console.info('[Gamepad] conectado:',e.gamepad.id); });
+window.addEventListener('gamepaddisconnected', ()=>{ gpIdx=-1; });
+
+function pollGamepad(){
+  if(gpIdx<0) return;
+  const gp = navigator.getGamepads()[gpIdx];
+  if(!gp) return;
+  const ax0 = gp.axes[0]??0, ax1=gp.axes[1]??0;
+  INPUT.left   = ax0<-0.4 || (gp.buttons[14]?.pressed??false);
+  INPUT.right  = ax0> 0.4 || (gp.buttons[15]?.pressed??false);
+  INPUT.up     = ax1<-0.4 || (gp.buttons[12]?.pressed??false) || (gp.buttons[0]?.pressed??false);
+  INPUT.defend = gp.buttons[1]?.pressed??false;
+  // Edge
+  const a=gp.buttons[0]?.pressed, x=gp.buttons[2]?.pressed, y=gp.buttons[3]?.pressed;
+  if(a && !INPUT._gp.a) INPUT._attack  = true;
+  if(x && !INPUT._gp.x) INPUT._special = true;
+  if(y && !INPUT._gp.y) INPUT._weapon  = true;
+  INPUT._gp.a=a; INPUT._gp.x=x; INPUT._gp.y=y;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILIDADES DOM
+═══════════════════════════════════════════════════════════ */
+function showPopup(x, y, text, color='#fff'){
+  const el = document.createElement('div');
+  el.className='dmg-popup';
+  el.textContent=text;
+  el.style.cssText=`left:${x}px;top:${y}px;color:${color};`;
+  document.body.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+}
+
+function burst(sx, sy, big){
+  for(let i=0;i<(big?10:5);i++){
+    const d=document.createElement('div');
+    const dx=Phaser.Math.Between(-55,55), dy=Phaser.Math.Between(-55,10);
+    d.style.cssText=`
+      position:fixed;pointer-events:none;z-index:25;
+      left:${sx}px;top:${sy}px;
+      width:${big?9:5}px;height:${big?9:5}px;border-radius:50%;
+      background:${big?'#f5c518':'#fff'};
+      animation:popUp .65s ease forwards;
+      transform:translate(${dx}px,${dy}px);
+    `;
+    document.body.appendChild(d);
+    d.addEventListener('animationend',()=>d.remove());
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PHASER — ESCENA PRINCIPAL
+═══════════════════════════════════════════════════════════ */
+class GameScene extends Phaser.Scene {
+  constructor(){ super({key:'GameScene'}); }
+
+  /* ── preload ─────────────────────────────────────────── */
+  preload(){
+    // Armas: emoji → canvas → textura Phaser
+    // Para PNGs propios: this.load.image(w.key, 'assets/'+w.key+'.png')
+    [...WEAPONS, SPECIAL].forEach(w => this._emojiTex(w.key, w.emoji));
+
+    // Personajes procedurales (reemplaza con spritesheets propios)
+    this._charTex('p1-tex', 0x1a6fc4, true);
+    this._charTex('p2-tex', 0xb02020, false);
+
+    // Fondo de salón
+    this._bgTex();
+  }
+
+  _emojiTex(key, emoji){
+    const c=document.createElement('canvas'); c.width=c.height=56;
+    const ctx=c.getContext('2d');
+    ctx.font='44px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(emoji,28,30);
+    this.textures.addCanvas(key,c);
+  }
+
+  _charTex(key, col, smile){
+    const g=this.make.graphics({add:false});
+    g.fillStyle(col,1);         g.fillRoundedRect(4,20,36,46,9);
+    g.fillStyle(col,1);         g.fillCircle(22,14,15);
+    g.fillStyle(0xffffff,1);    g.fillCircle(16,12,5); g.fillCircle(28,12,5);
+    g.fillStyle(0x0a0a0a,1);    g.fillCircle(17,13,3); g.fillCircle(29,13,3);
+    g.lineStyle(2,0x0a0a0a,1);
+    smile ? g.strokeArc(22,18,5,0,Math.PI) : g.strokeArc(22,21,5,Math.PI,0);
+    g.generateTexture(key,44,68); g.destroy();
+  }
+
+  _bgTex(){
+    const W=this.scale.width, H=this.scale.height;
+    const g=this.make.graphics({add:false});
+    // Pared
+    g.fillStyle(0xf2e4cf,1); g.fillRect(0,0,W,H*.73);
+    // Papel pintado
+    g.lineStyle(1,0xddd0b8,.5);
+    for(let x=0;x<W;x+=44) g.lineBetween(x,0,x,H*.73);
+    for(let y=0;y<H*.73;y+=44) g.lineBetween(0,y,W,y);
+    // Zócalo
+    g.fillStyle(0xc4956a,1); g.fillRect(0,H*.73-5,W,9);
+    // Suelo
+    g.fillStyle(0xd2a76c,1); g.fillRect(0,H*.73+4,W,H*.27);
+    g.lineStyle(1,0xb8904a,.4);
+    for(let x=0;x<W;x+=58) g.lineBetween(x,H*.73+4,x,H);
+    // TV decorativa
+    g.fillStyle(0x111827,1); g.fillRoundedRect(22,26,72,50,5);
+    g.fillStyle(0x3d9eff,.25); g.fillRoundedRect(27,31,62,40,3);
+    // Cuadro
+    g.fillStyle(0xfafafa,.7); g.fillRect(W/2-38,18,76,52);
+    g.lineStyle(3,0x9a7a55,1); g.strokeRect(W/2-38,18,76,52);
+    g.generateTexture('bg',W,H); g.destroy();
+  }
+
+  /* ── create ──────────────────────────────────────────── */
+  create(){
+    this.W=this.scale.width; this.H=this.scale.height;
+    this.gameActive=false;
+    this.matchSecs=60;
+
+    // Fondo
+    this.add.image(0,0,'bg').setOrigin(0);
+
+    // Plataformas
+    this.platforms=this.physics.add.staticGroup();
+    this._plt(this.W/2,       this.H-16,   this.W,   18, 0x7a5230); // suelo
+    this._plt(this.W*.22,     this.H-138,  150,  14, 0x9a7040); // izq
+    this._plt(this.W*.78,     this.H-138,  150,  14, 0x9a7040); // der
+    this._plt(this.W*.5,      this.H-235,  170,  14, 0x9a7040); // centro
+
+    // Jugadores
+    this.p1=this._spawnPlayer(this.W*.16, this.H-175, 'p1-tex', 0);
+    this.p2=this._spawnPlayer(this.W*.84, this.H-175, 'p2-tex', 1);
+    this.p2.setFlipX(true);
+
+    // Armas iniciales
+    this.p1.wIdx=0;
+    this.p2.wIdx=5; // sartén CPU
+
+    // Proyectiles
+    this.projectiles=this.physics.add.group({maxSize:24});
+
+    // CPU
+    this.cpu={timer:0, action:'idle'};
+
+    // Colliders
+    this.physics.add.collider(this.p1,this.platforms);
+    this.physics.add.collider(this.p2,this.platforms);
+    this.physics.add.collider(this.p1,this.p2);
+    this.physics.add.overlap(this.projectiles,[this.p1,this.p2],
+      this._onHit,this._canHit,this);
+
+    // Timer 1 s
+    this.time.addEvent({delay:1000,loop:true,callback:this._tick1s,callbackScope:this});
+
+    // Fase de espera: 'waiting' → 'countdown' → 'playing'
+    this.phase = 'waiting';
+  }
+
+  _plt(cx,cy,w,h,col){
+    const g=this.make.graphics({add:false});
+    g.fillStyle(col,1);       g.fillRect(0,0,w,h);
+    g.fillStyle(0xffffff,.18);g.fillRect(0,0,w,3);
+    const key='p'+cx+cy;
+    g.generateTexture(key,w,h); g.destroy();
+    const p=this.platforms.create(cx,cy,key);
+    p.refreshBody(); return p;
+  }
+
+  _spawnPlayer(x,y,tex,idx){
+    const p=this.physics.add.image(x,y,tex);
+    p.setCollideWorldBounds(true).setBounce(.1).setDragX(720);
+    p.hp=100; p.maxHp=100;
+    p.power=0; p.powerReady=false;
+    p.isDefending=false; p.stunMs=0;
+    p.playerIdx=idx; p.wIdx=0;
+    return p;
+  }
+
+  /* ── START ───────────────────────────────────────────── */
+  _startGame(){
+    // Ocultar pantalla de inicio
+    const scr = document.getElementById('screen-start');
+    scr.style.opacity = '0';
+    scr.style.pointerEvents = 'none';
+    setTimeout(()=>{ scr.style.display='none'; }, 460);
+
+    // Cuenta atrás 3-2-1-¡YA!
+    let c = 3;
+    const cd = () => {
+      if(c > 0){
+        this._bigFlash(c.toString(), c === 1 ? '#f5c518' : '#fff');
+        c--;
+        this.time.delayedCall(850, cd);
+      } else {
+        this._bigFlash('¡YA!', '#2ecc71');
+        this.phase = 'playing';
+        this.gameActive = true;
+      }
+    };
+    cd();
+  }
+
+  _bigFlash(txt,col){
+    const t=this.add.text(this.W/2,this.H/2,txt,{
+      fontFamily:'Bangers',fontSize:'96px',color:col,stroke:'#000',strokeThickness:8
+    }).setOrigin(.5).setDepth(99);
+    this.tweens.add({targets:t,scaleX:1.4,scaleY:1.4,alpha:0,duration:680,onComplete:()=>t.destroy()});
+  }
+
+  /* ── TICK 1 s ────────────────────────────────────────── */
+  _tick1s(){
+    if(!this.gameActive) return;
+    this.matchSecs=Math.max(0,this.matchSecs-1);
+    // Barra de poder: +4% por segundo (pasivo)
+    [this.p1,this.p2].forEach(p=>{
+      if(p.hp<=0) return;
+      p.power=Math.min(100,p.power+4);
+      if(p.power>=100 && !p.powerReady){
+        p.powerReady=true;
+        if(p===this.p1){
+          document.getElementById('btn-special').classList.add('ready');
+          showPopup(55,this.H*.34,'⚡ ESPECIAL LISTO','#f5c518');
+        }
+      }
+    });
+    this._updateHUD();
+    if(this.matchSecs<=0) this._endByTime();
+  }
+
+  /* ── UPDATE (frame) ──────────────────────────────────── */
+  update(_t,delta){
+    pollGamepad();
+
+    // Detecta el flag del botón DOM y arranca la cuenta atrás
+    if(this.phase === 'waiting' && GAME_START_REQUESTED){
+      this.phase = 'countdown';
+      this._startGame();
+    }
+
+    if(!this.gameActive){ this._clearEdges(); return; }
+    this._handleP1(delta);
+    this._handleCPU(delta);
+    this._clearEdges();
+    this._updateHUD();
+  }
+
+  /* ── JUGADOR 1 ───────────────────────────────────────── */
+  _handleP1(delta){
+    const p=this.p1;
+    if(p.hp<=0) return;
+    if(p.stunMs>0){ p.stunMs-=delta; return; }
+
+    if(INPUT.left)       { p.setVelocityX(-295); p.setFlipX(true);  }
+    else if(INPUT.right) { p.setVelocityX(295);  p.setFlipX(false); }
+    else                   p.setVelocityX(p.body.velocity.x*.72);
+
+    if(INPUT.up && p.body.blocked.down) p.setVelocityY(-545);
+
+    p.isDefending=INPUT.defend;
+    p.setAlpha(p.isDefending?.52:1);
+
+    if(INPUT._attack)  this._fire(p,false);
+    if(INPUT._special && p.powerReady){
+      this._fire(p,true);
+      p.power=0; p.powerReady=false;
+      document.getElementById('btn-special').classList.remove('ready');
+    }
+    if(INPUT._weapon){
+      p.wIdx=(p.wIdx+1)%WEAPONS.length;
+      document.getElementById('p1-weapon').textContent=WEAPONS[p.wIdx].emoji+' '+WEAPONS[p.wIdx].label;
+    }
+  }
+
+  /* ── CPU (IA simple) ─────────────────────────────────── */
+  _handleCPU(delta){
+    const cpu=this.p2, hero=this.p1;
+    if(cpu.hp<=0) return;
+
+    this.cpu.timer-=delta;
+    const dist=hero.x-cpu.x, abs=Math.abs(dist), dir=Math.sign(dist);
+
+    if(this.cpu.timer<=0){
+      this.cpu.timer=650+Math.random()*550;
+      const r=Math.random();
+      // Esquivar proyectiles cercanos
+      const danger=this.projectiles.getChildren().find(pj=>pj.owner!==cpu && Math.abs(pj.x-cpu.x)<170);
+      if(danger && r<.45){ this.cpu.action='jump'; }
+      else if(abs<90)    { this.cpu.action=r<.45?'jump':'retreat'; }
+      else if(abs<280)   { this.cpu.action=r<.52?'attack':r<.72?'jump':'approach'; }
+      else               { this.cpu.action='approach'; }
+      // Defensa esporádica
+      if(danger && r>.55) this.cpu.action='defend';
+    }
+
+    cpu.isDefending=false; cpu.setAlpha(1);
+    switch(this.cpu.action){
+      case 'approach': cpu.setVelocityX(dir*225); cpu.setFlipX(dir<0); break;
+      case 'retreat':  cpu.setVelocityX(-dir*195); cpu.setFlipX(dir>0); break;
+      case 'jump':     if(cpu.body.blocked.down) cpu.setVelocityY(-525); break;
+      case 'attack':   cpu.setFlipX(dist<0); this._fire(cpu,false); this.cpu.action='idle'; break;
+      case 'defend':   cpu.isDefending=true; cpu.setAlpha(.52); break;
+      default:         cpu.setVelocityX(cpu.body.velocity.x*.72);
+    }
+    // Saltar obstáculos
+    if((cpu.body.blocked.right||cpu.body.blocked.left)&&cpu.body.blocked.down) cpu.setVelocityY(-525);
+    // Especial CPU
+    if(cpu.powerReady && Math.random()<.012){ this._fire(cpu,true); cpu.power=0; cpu.powerReady=false; }
+  }
+
+  /* ── DISPARO ─────────────────────────────────────────── */
+  _fire(player, isSpecial){
+    if(player.stunMs>0) return;
+    const w=isSpecial?SPECIAL:WEAPONS[player.wIdx];
+    const dir=player.flipX?-1:1;
+    const proj=this.projectiles.create(player.x+dir*30, player.y-10, w.key);
+    if(!proj) return;
+    proj.setVelocityX(dir*w.spd);
+    proj.setVelocityY(w.vy);
+    proj.setGravityY(w.grav);
+    proj.setBounce(w.bounce,0);
+    proj.setCollideWorldBounds(true);
+    proj.setScale(.58+w.mass*.34);
+    proj.owner=player; proj.wd=w;
+    if(isSpecial){
+      this.tweens.add({targets:proj,angle:360,duration:380,repeat:-1});
+      this.cameras.main.shake(110,.006);
+    } else {
+      this.tweens.add({targets:proj,angle:dir*180,duration:290,repeat:-1});
+    }
+    this.time.delayedCall(3000,()=>{ if(proj.active) proj.destroy(); });
+  }
+
+  /* ── HIT ─────────────────────────────────────────────── */
+  _canHit(proj,player){ return proj.owner!==player && player.stunMs<=0; }
+
+  _onHit(proj,player){
+    const w=proj.wd;
+    const dmg=player.isDefending?Math.max(1,Math.floor(w.dmg*.2)):w.dmg;
+    player.hp=Math.max(0,player.hp-dmg);
+    player.stunMs=player.isDefending?140:410;
+    const dir=(player.x>proj.x)?1:-1;
+    player.setVelocity(dir*195*w.mass,-175);
+    this.tweens.add({targets:player,alpha:.1,duration:55,yoyo:true,repeat:3,
+      onComplete:()=>player.setAlpha(player.isDefending?.52:1)});
+    // Power sube al pegar y al recibir
+    proj.owner.power=Math.min(100,proj.owner.power+2);
+    if(!player.powerReady) player.power=Math.min(100,player.power+1);
+    // UI feedback
+    const cam=this.cameras.main;
+    showPopup(player.x-cam.scrollX, player.y-cam.scrollY-42,
+      (player.isDefending?'🛡 -':'-')+dmg,
+      player.isDefending?'#3d9eff': w===SPECIAL?'#f5c518':'#ff4d4d');
+    burst(player.x-cam.scrollX, player.y-cam.scrollY, w===SPECIAL);
+    proj.destroy();
+    this._updateHUD();
+    if(player.hp<=0) this._endByKO(player);
+  }
+
+  /* ── HUD ─────────────────────────────────────────────── */
+  _updateHUD(){
+    const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.style.width=Math.max(0,val)+'%'; };
+    set('hp1-fill',this.p1.hp); set('hp2-fill',this.p2.hp);
+    set('pow1-fill',this.p1.power); set('pow2-fill',this.p2.power);
+    const hc=v=>v>50?'#2ecc71':v>25?'#f39c12':'#e74c3c';
+    document.getElementById('hp1-fill').style.background=hc(this.p1.hp);
+    document.getElementById('hp2-fill').style.background=hc(this.p2.hp);
+    const tv=document.getElementById('timer-val');
+    tv.textContent=Math.max(0,this.matchSecs);
+    tv.style.color=this.matchSecs>20?'#fff':this.matchSecs>10?'#f39c12':'#e74c3c';
+    const w2=WEAPONS[this.p2.wIdx];
+    document.getElementById('p2-weapon').textContent=w2.emoji+' '+w2.label;
+  }
+
+  /* ── FIN ─────────────────────────────────────────────── */
+  _endByKO(loser){
+    if(!this.gameActive) return; this.gameActive=false;
+    const win=loser===this.p2;
+    this._showResult(win, win?'¡GANASTE!':'¡PERDISTE!', win?'🏆':'💀',
+      `HP restante: ${Math.round(win?this.p1.hp:this.p2.hp)} · KO en ${60-this.matchSecs}s`);
+  }
+  _endByTime(){
+    if(!this.gameActive) return; this.gameActive=false;
+    const tie=this.p1.hp===this.p2.hp;
+    const win=this.p1.hp>this.p2.hp;
+    this._showResult(win&&!tie,
+      tie?'¡EMPATE!':win?'¡GANASTE!':'¡LA CPU GANA!',
+      tie?'🤝':win?'🏆':'💀',
+      `Tu HP: ${Math.round(this.p1.hp)} · CPU HP: ${Math.round(this.p2.hp)}`);
+  }
+  _showResult(win,title,icon,detail){
+    document.getElementById('result-icon').textContent=icon;
+    const rt=document.getElementById('result-title');
+    rt.textContent=title;
+    rt.style.color=win?'#2ecc71':title.includes('EMPATE')?'#f5c518':'#e74c3c';
+    document.getElementById('result-detail').textContent=detail;
+    document.getElementById('screen-result').classList.remove('hidden');
+  }
+
+  /* ── LIMPIA EDGES ────────────────────────────────────── */
+  _clearEdges(){ INPUT._attack=false; INPUT._special=false; INPUT._weapon=false; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAMAÑO ADAPTATIVO
+   HUD: ~68px  ·  Controles táctiles: 28dvh (máx 170px)
+   Canvas: el espacio restante
+═══════════════════════════════════════════════════════════ */
+const HUD_H  = 68;
+const CTRL_H = Math.min(170, Math.round(window.innerHeight * .28));
+const GAME_W = Math.min(window.innerWidth, 820);
+const GAME_H = Math.max(260, window.innerHeight - HUD_H - CTRL_H);
+
+// Inyecta variables CSS para que los controles se adapten
+document.documentElement.style.setProperty('--ctrl-h', CTRL_H+'px');
+document.documentElement.style.setProperty('--dpad-sz', Math.min(CTRL_H-12, 148)+'px');
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  width:  GAME_W,
+  height: GAME_H,
+  parent: 'game-wrap',
+  transparent: true,
+  physics:{
+    default:'arcade',
+    arcade:{ gravity:{y:720}, debug:false }
+  },
+  scene: GameScene,
+});
+</script>
+</body>
+</html>
