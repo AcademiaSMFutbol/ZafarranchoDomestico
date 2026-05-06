@@ -2,75 +2,116 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Zafarrancho Doméstico - El Juego</title>
+    <title>Zafarrancho Doméstico - Conexión QR</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        #game-container { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #ui-info { position: absolute; top: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; text-align: center; }
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; color: white; }
+        #setup-screen { position: absolute; background: rgba(0,0,0,0.9); width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        .qr-container { display: flex; gap: 40px; margin-top: 20px; }
+        .qr-box { background: white; padding: 15px; border-radius: 10px; text-align: center; color: black; }
+        canvas { border: 4px solid #fff; }
     </style>
 </head>
 <body>
-    <div id="ui-info">ID de Sala: <strong id="peer-id">Conectando...</strong><br>Conecta los móviles para jugar</div>
+    <div id="setup-screen">
+        <h1>¡ZAFARRANCHO DOMÉSTICO!</h1>
+        <p>Escanead para conectar los mandos:</p>
+        <div class="qr-container">
+            <div class="qr-box">
+                <div id="qr-p1"></div>
+                <p><b>JUGADOR 1</b></p>
+            </div>
+            <div class="qr-box">
+                <div id="qr-p2"></div>
+                <p><b>JUGADOR 2</b></p>
+            </div>
+        </div>
+        <p id="status">Esperando conexión...</p>
+    </div>
     <div id="game-container"></div>
 
     <script>
-        const ROOM_ID = 'zafarrancho-familiar-2024'; // ID Fijo para facilitar conexión
-        const config = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            parent: 'game-container',
-            physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } },
-            scene: { preload: preload, create: create, update: update }
-        };
+        const ROOM_ID = 'zafarrancho-familiar-2024';
+        // Generamos la URL del mando basada en tu repositorio de GitHub
+        const base_url = window.location.href.split('index.html')[0];
+        const controller_url = base_url + "controller.html?id=" + ROOM_ID;
 
-        const game = new Phaser.Game(config);
-        let player1, player2, cursors, ball;
-        let peer;
+        // Generar los QR al cargar
+        new QRCode(document.getElementById("qr-p1"), { text: controller_url, width: 150, height: 150 });
+        new QRCode(document.getElementById("qr-p2"), { text: controller_url, width: 150, height: 150 });
 
-        function preload() {
-            // Fondo del salón desordenado
-            this.load.image('fondo', 'https://midu.dev/images/wallpapers/retro-game-chamber.png'); // Placeholder funcional
-            this.load.spritesheet('p1', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-            this.load.spritesheet('p2', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-            this.load.image('objeto', 'https://labs.phaser.io/assets/sprites/apple.png');
-        }
+        class MainGame extends Phaser.Scene {
+            constructor() { super('MainGame'); }
+            preload() {
+                this.load.image('ball', 'https://labs.phaser.io/assets/sprites/apple.png');
+                this.load.spritesheet('char', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+            }
+            create() {
+                // ... (Misma lógica de físicas anterior)
+                let platforms = this.physics.add.staticGroup();
+                platforms.create(400, 580, null).setDisplaySize(800, 40).refreshBody();
 
-        function create() {
-            this.add.image(400, 300, 'fondo').setScale(2);
-            document.getElementById('peer-id').innerText = ROOM_ID;
+                this.p1 = this.createPlayer(150, 400, 0x3498db);
+                this.p2 = this.createPlayer(650, 400, 0xe74c3c);
+                this.p2.setFlipX(true);
 
-            // Suelo invisible
-            let platforms = this.physics.add.staticGroup();
-            platforms.create(400, 580, 'objeto').setScale(50, 1).setAlpha(0);
+                this.physics.add.collider([this.p1, this.p2], platforms);
+                this.projectiles = this.physics.add.group();
+                this.physics.add.overlap(this.projectiles, [this.p1, this.p2], this.hitPlayer, null, this);
 
-            // Personajes
-            player1 = this.physics.add.sprite(150, 450, 'p1').setScale(1.5);
-            player2 = this.physics.add.sprite(650, 450, 'p2').setScale(1.5).setFlipX(true);
-            
-            player1.setCollideWorldBounds(true);
-            player2.setCollideWorldBounds(true);
-            this.physics.add.collider(player1, platforms);
-            this.physics.add.collider(player2, platforms);
+                this.initNetwork();
+            }
 
-            // Inicializar PeerJS para recibir mandos
-            peer = new Peer(ROOM_ID);
-            peer.on('connection', (conn) => {
-                conn.on('data', (data) => {
-                    handleInput(data, conn.peer);
+            createPlayer(x, y, color) {
+                let p = this.physics.add.sprite(x, y, 'char').setScale(2).setTint(color);
+                p.setCollideWorldBounds(true);
+                p.health = 100;
+                return p;
+            }
+
+            initNetwork() {
+                const peer = new Peer(ROOM_ID);
+                this.conns = [];
+                peer.on('connection', (conn) => {
+                    this.conns.push(conn);
+                    document.getElementById('status').innerText = `Jugadores conectados: ${this.conns.length}/2`;
+                    
+                    // Cuando los dos están conectados, ocultamos la pantalla de QR
+                    if(this.conns.length === 2) {
+                        setTimeout(() => { document.getElementById('setup-screen').style.display = 'none'; }, 1000);
+                    }
+
+                    conn.on('data', (data) => this.processInput(data, this.conns.indexOf(conn)));
                 });
-            });
+            }
+
+            processInput(msg, playerIdx) {
+                let p = (playerIdx === 0) ? this.p1 : this.p2;
+                if (msg === 'LEFT_START') p.setVelocityX(-250);
+                else if (msg === 'RIGHT_START') p.setVelocityX(250);
+                else if (msg.includes('STOP')) p.setVelocityX(0);
+                else if (msg === 'ATTACK') this.fire(p);
+                else if (msg === 'DEFEND') p.setAlpha(0.5);
+            }
+
+            fire(p) {
+                let obj = this.projectiles.create(p.x, p.y, 'ball');
+                obj.setVelocity(p.flipX ? -500 : 500, -100);
+                obj.owner = p;
+            }
+
+            hitPlayer(player, projectile) {
+                if (projectile.owner === player || player.alpha < 1) return;
+                projectile.destroy();
+                player.health -= 10;
+                if (player.health <= 0) { alert("¡Victoria!"); location.reload(); }
+            }
         }
 
-        function handleInput(cmd, peerId) {
-            // Lógica simple para mover según el comando del móvil
-            // Aquí se asignará J1 o J2 según quién conecte primero
-            console.log("Comando recibido: " + cmd);
-        }
-
-        function update() {}
+        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 600 } } }, scene: MainGame };
+        new Phaser.Game(config);
     </script>
 </body>
 </html>
