@@ -6,16 +6,17 @@
     <title>Zafarrancho Doméstico - MVP Final</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Arial', sans-serif; }
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
         #ui { position: absolute; top: 15px; width: 90%; display: none; justify-content: space-between; z-index: 10; pointer-events: none; }
         .health-bar { width: 140px; height: 16px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 8px; overflow: hidden; }
         .fill { width: 100%; height: 100%; transition: width 0.3s; }
         #p1-fill { background: #3498db; box-shadow: 0 0 10px #3498db; }
         #cpu-fill { background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
-        canvas { border-radius: 10px; }
+        #fs-btn { position: absolute; top: 10px; right: 10px; z-index: 1000; background: rgba(255,255,255,0.3); border: 2px solid #fff; color: white; font-size: 20px; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <button id="fs-btn">⛶ Fullscreen</button>
     <div id="ui">
         <div><div class="health-bar"><div id="p1-fill" class="fill"></div></div></div>
         <div><div class="health-bar"><div id="cpu-fill" class="fill"></div></div></div>
@@ -38,7 +39,7 @@
                 this.add.image(W/2, H/2, 'fondo').setDisplaySize(W, H);
                 this.generarTexturas();
 
-                // Pantalla de Inicio mejorada
+                // Pantalla de Inicio
                 this.setupMenu(W, H);
 
                 // Jugadores
@@ -56,39 +57,31 @@
                 this.physics.add.overlap(this.projectiles, [this.player, this.cpu], this.onHit, null, this);
 
                 this.isStarted = false;
+                
+                // Animaciones corregidas
                 this.anims.create({ key: 'walk', frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }), frameRate: 12, repeat: -1 });
                 this.anims.create({ key: 'idle', frames: [ { key: 'dude', frame: 4 } ], frameRate: 20 });
+                this.anims.create({ key: 'turn-left', frames: [ { key: 'dude', frame: 0 } ], frameRate: 20 });
+                this.anims.create({ key: 'turn-right', frames: [ { key: 'dude', frame: 5 } ], frameRate: 20 });
             }
 
             setupMenu(W, H) {
-                this.menuBg = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.8).setZ(100);
+                this.menuGroup = this.add.container(0, 0).setZ(100);
+                let bg = this.add.rectangle(W/2, H/2, W, H, 0x1a1a1a, 0.9);
+                let btn = this.add.rectangle(W/2, H/2, 250, 70, 0x2ecc71).setInteractive();
+                let txt = this.add.text(W/2, H/2, 'INICIAR BATALLA', { fontSize: '24px', fontStyle: 'bold' }).setOrigin(0.5);
                 
-                // Botón de Inicio Estilizado
-                this.btnStart = this.add.container(W/2, H/2);
-                let btnShape = this.add.rectangle(0, 0, 300, 80, 0x3498db).setInteractive();
-                let btnText = this.add.text(0, 0, '¡JUGAR!', { fontSize: '40px', fontStyle: 'bold', fill: '#fff' }).setOrigin(0.5);
-                this.btnStart.add([btnShape, btnText]);
-                this.btnStart.setZ(101);
+                this.menuGroup.add([bg, btn, txt]);
 
-                btnShape.on('pointerdown', () => {
-                    this.tryFullScreen();
-                    this.startGame();
-                });
-            }
-
-            tryFullScreen() {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(e => console.log("FS bloqueado"));
-                }
+                btn.on('pointerdown', () => this.startGame());
             }
 
             startGame() {
-                this.menuBg.destroy();
-                this.btnStart.destroy();
+                this.menuGroup.destroy();
                 document.getElementById('ui').style.display = 'flex';
                 this.isStarted = true;
                 this.setupControls();
-                this.time.addEvent({ delay: 2000, callback: () => { if(this.isStarted) this.fire(this.cpu); }, loop: true });
+                this.time.addEvent({ delay: 1800, callback: () => { if(this.isStarted) this.fire(this.cpu); }, loop: true });
             }
 
             setupControls() {
@@ -96,24 +89,23 @@
                 this.input.addPointer(2);
                 this.moveDir = 0;
 
-                // Controles Táctiles (Zonas invisibles pero efectivas)
-                let bL = this.add.rectangle(W*0.15, H*0.8, W*0.3, H*0.4, 0xffffff, 0.05).setInteractive();
-                this.add.text(W*0.12, H*0.78, '⬅️', {fontSize:'40px'});
+                let bL = this.add.rectangle(W*0.15, H*0.8, W*0.3, H*0.4, 0xffffff, 0.01).setInteractive();
+                this.add.text(W*0.1, H*0.75, '⬅️', {fontSize:'40px'});
                 bL.on('pointerdown', () => this.moveDir = -1);
                 bL.on('pointerup', () => this.moveDir = 0);
 
-                let bR = this.add.rectangle(W*0.45, H*0.8, W*0.3, H*0.4, 0xffffff, 0.05).setInteractive();
-                this.add.text(W*0.42, H*0.78, '➡️', {fontSize:'40px'});
+                let bR = this.add.rectangle(W*0.45, H*0.8, W*0.3, H*0.4, 0xffffff, 0.01).setInteractive();
+                this.add.text(W*0.4, H*0.75, '➡️', {fontSize:'40px'});
                 bR.on('pointerdown', () => this.moveDir = 1);
                 bR.on('pointerup', () => this.moveDir = 0);
 
                 let bD = this.add.rectangle(W*0.7, H*0.8, W*0.2, H*0.4, 0xffff00, 0.1).setInteractive();
-                this.add.text(W*0.68, H*0.78, '🛡️', {fontSize:'30px'});
+                this.add.text(W*0.68, H*0.75, '🛡️', {fontSize:'30px'});
                 bD.on('pointerdown', () => this.player.isDefending = true);
                 bD.on('pointerup', () => this.player.isDefending = false);
 
                 let bF = this.add.rectangle(W*0.9, H*0.8, W*0.2, H*0.4, 0xff0000, 0.2).setInteractive();
-                this.add.text(W*0.88, H*0.78, '💥', {fontSize:'40px'});
+                this.add.text(W*0.88, H*0.75, '💥', {fontSize:'40px'});
                 bF.on('pointerdown', () => this.fire(this.player));
             }
 
@@ -132,42 +124,38 @@
             update() {
                 if(!this.isStarted) return;
 
-                // Lógica Jugador
                 if(this.player.isDefending) {
                     this.player.setVelocityX(0);
                     this.player.setAlpha(0.5);
-                    this.player.anims.play('idle');
                 } else {
                     this.player.setAlpha(1);
                     this.player.setVelocityX(this.moveDir * 280);
                     
                     if(this.moveDir !== 0) {
-                        // CORRECCIÓN ORIENTACIÓN:
-                        // Si se mueve a la derecha (1), flipX es FALSE (mira a la derecha)
-                        // Si se mueve a la izquierda (-1), flipX es TRUE (mira a la izquierda)
+                        // Orientación corregida según el movimiento
                         this.player.setFlipX(this.moveDir < 0);
                         this.player.anims.play('walk', true);
                     } else {
+                        // Al estar quieto, mira hacia el rival (CPU)
+                        this.player.setFlipX(this.player.x > this.cpu.x);
                         this.player.anims.play('idle');
                     }
                 }
-
-                // CPU mira siempre al jugador
                 this.cpu.setFlipX(this.cpu.x > this.player.x);
             }
 
             fire(who) {
                 if(who.hp <= 0 || who.isDefending) return;
                 const types = [
-                    {k:'cojin', d:5, s:450}, {k:'mando', d:12, s:600}, 
-                    {k:'libro', d:10, s:500}, {k:'jarron', d:22, s:380}
+                    {k:'cojin', d:4, s:450}, {k:'mando', d:10, s:600}, 
+                    {k:'libro', d:8, s:500}, {k:'jarron', d:18, s:380}
                 ];
                 let t = types[Math.floor(Math.random()*types.length)];
-                let obj = this.projectiles.create(who.x, who.y - 20, t.k);
+                let obj = this.projectiles.create(who.x, who.y - 10, t.k);
                 obj.damage = t.d;
                 obj.owner = who;
                 let dir = who.flipX ? -1 : 1;
-                obj.setVelocity(t.s * dir, -180);
+                obj.setVelocity(t.s * dir, -150);
                 obj.setAngularVelocity(400);
             }
 
@@ -182,8 +170,7 @@
 
                 if(target.hp <= 0) {
                     this.isStarted = false;
-                    alert("¡BATALLA TERMINADA!");
-                    location.reload();
+                    this.scene.restart();
                 }
             }
         }
@@ -194,6 +181,15 @@
             scene: MainScene
         };
         new Phaser.Game(config);
+
+        // Gestión manual de Pantalla Completa
+        document.getElementById('fs-btn').onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        };
     </script>
 </body>
 </html>
