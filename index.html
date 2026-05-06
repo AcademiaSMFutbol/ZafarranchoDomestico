@@ -3,28 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Zafarrancho Doméstico - Móvil</title>
+    <title>Zafarrancho Doméstico - MVP Final</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
         body { margin: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
         #ui { position: absolute; top: 10px; width: 95%; display: flex; justify-content: space-between; z-index: 10; pointer-events: none; }
-        .health-bar { width: 120px; height: 15px; background: #555; border: 2px solid #fff; border-radius: 5px; overflow: hidden; }
+        .health-bar { width: 140px; height: 15px; background: #555; border: 2px solid #fff; border-radius: 5px; overflow: hidden; }
         .fill { width: 100%; height: 100%; transition: width 0.3s; }
         #p1-fill { background: #3498db; }
         #cpu-fill { background: #e74c3c; }
-        #label { color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px #000; }
+        #label { color: white; font-size: 14px; font-weight: bold; text-shadow: 1px 1px #000; }
     </style>
 </head>
 <body>
     <div id="ui">
-        <div>
-            <div id="label">TÚ</div>
-            <div class="health-bar"><div id="p1-fill" class="fill"></div></div>
-        </div>
-        <div>
-            <div id="label" style="text-align: right;">CPU</div>
-            <div class="health-bar"><div id="cpu-fill" class="fill"></div></div>
-        </div>
+        <div><div id="label">TÚ</div><div class="health-bar"><div id="p1-fill" class="fill"></div></div></div>
+        <div><div id="label" style="text-align: right;">CPU</div><div class="health-bar"><div id="cpu-fill" class="fill"></div></div></div>
     </div>
     <div id="game-container"></div>
 
@@ -34,7 +28,8 @@
 
             preload() {
                 this.load.image('fondo', 'image_1.png');
-                this.load.image('objeto', 'https://labs.phaser.io/assets/sprites/apple.png');
+                // Usamos una pelota blanca genérica que tintaremos para simular objetos
+                this.load.image('objeto_base', 'https://labs.phaser.io/assets/sprites/balls/white.png');
                 this.load.spritesheet('munequito', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
             }
 
@@ -43,15 +38,28 @@
                 const H = this.cameras.main.height;
 
                 this.add.image(W/2, H/2, 'fondo').setDisplaySize(W, H);
-                
                 let ground = this.physics.add.staticGroup();
                 ground.create(W/2, H - 20, null).setDisplaySize(W, 40).setAlpha(0).refreshBody();
 
-                this.player = this.physics.add.sprite(100, H-100, 'munequito').setScale(2).setTint(0x3498db);
+                // Animaciones
+                this.anims.create({
+                    key: 'caminar',
+                    frames: this.anims.generateFrameNumbers('munequito', { start: 0, end: 3 }),
+                    frameRate: 10,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'quieto',
+                    frames: [ { key: 'munequito', frame: 4 } ],
+                    frameRate: 20
+                });
+
+                // Jugador y CPU
+                this.player = this.physics.add.sprite(100, H-100, 'munequito').setScale(2.5).setTint(0x3498db);
                 this.player.setCollideWorldBounds(true);
                 this.player.hp = 100;
 
-                this.cpu = this.physics.add.sprite(W-100, H-100, 'munequito').setScale(2).setTint(0xe74c3c);
+                this.cpu = this.physics.add.sprite(W-100, H-100, 'munequito').setScale(2.5).setTint(0xe74c3c);
                 this.cpu.setCollideWorldBounds(true);
                 this.cpu.setFlipX(true);
                 this.cpu.hp = 100;
@@ -60,59 +68,75 @@
                 this.projectiles = this.physics.add.group();
                 this.physics.add.overlap(this.projectiles, [this.player, this.cpu], this.recibirGolpe, null, this);
 
-                // --- CONTROLES TÁCTILES ---
-                this.input.addPointer(2); // Multitouch
-                
-                // Botón Izquierda
-                this.btnLeft = this.add.rectangle(W*0.15, H*0.8, W*0.25, H*0.3, 0xffffff, 0.2).setInteractive();
-                this.add.text(W*0.12, H*0.78, '⬅️', { fontSize: '40px' });
-
-                // Botón Derecha
-                this.btnRight = this.add.rectangle(W*0.4, H*0.8, W*0.25, H*0.3, 0xffffff, 0.2).setInteractive();
-                this.add.text(W*0.37, H*0.78, '➡️', { fontSize: '40px' });
-
-                // Botón Ataque (Derecha de la pantalla)
-                this.btnFire = this.add.rectangle(W*0.8, H*0.8, W*0.35, H*0.3, 0xff0000, 0.3).setInteractive();
-                this.add.text(W*0.75, H*0.78, '💥', { fontSize: '50px' });
-
-                // Lógica de botones
+                // --- CONTROLES TÁCTILES CORREGIDOS ---
+                this.input.addPointer(2);
                 this.isMovingLeft = false;
                 this.isMovingRight = false;
 
-                this.btnLeft.on('pointerdown', () => { this.isMovingLeft = true; this.player.setFlipX(true); });
-                this.btnLeft.on('pointerup', () => this.isMovingLeft = false);
-                this.btnLeft.on('pointerout', () => this.isMovingLeft = false);
+                // Izquierda
+                let bL = this.add.rectangle(W*0.15, H*0.8, W*0.25, H*0.3, 0xffffff, 0.1).setInteractive();
+                this.add.text(W*0.12, H*0.78, '⬅️', { fontSize: '40px' });
+                bL.on('pointerdown', () => this.isMovingLeft = true);
+                bL.on('pointerup', () => this.isMovingLeft = false);
+                bL.on('pointerout', () => this.isMovingLeft = false);
 
-                this.btnRight.on('pointerdown', () => { this.isMovingRight = true; this.player.setFlipX(false); });
-                this.btnRight.on('pointerup', () => this.isMovingRight = false);
-                this.btnRight.on('pointerout', () => this.isMovingRight = false);
+                // Derecha
+                let bR = this.add.rectangle(W*0.4, H*0.8, W*0.25, H*0.3, 0xffffff, 0.1).setInteractive();
+                this.add.text(W*0.37, H*0.78, '➡️', { fontSize: '40px' });
+                bR.on('pointerdown', () => this.isMovingRight = true);
+                bR.on('pointerup', () => this.isMovingRight = false);
+                bR.on('pointerout', () => this.isMovingRight = false);
 
-                this.btnFire.on('pointerdown', () => this.lanzarObjeto(this.player));
+                // Ataque
+                let bF = this.add.rectangle(W*0.8, H*0.8, W*0.3, H*0.3, 0xff0000, 0.2).setInteractive();
+                this.add.text(W*0.76, H*0.78, '💥', { fontSize: '50px' });
+                bF.on('pointerdown', () => this.lanzarObjeto(this.player));
 
-                // IA
-                this.time.addEvent({ delay: 2000, callback: this.ataqueCPU, callbackScope: this, loop: true });
+                this.time.addEvent({ delay: 1800, callback: this.ataqueCPU, callbackScope: this, loop: true });
             }
 
             update() {
-                if (this.isMovingLeft) this.player.setVelocityX(-200);
-                else if (this.isMovingRight) this.player.setVelocityX(200);
-                else this.player.setVelocityX(0);
+                // Lógica de movimiento corregida
+                if (this.isMovingLeft) {
+                    this.player.setVelocityX(-200);
+                    this.player.setFlipX(true);
+                    this.player.anims.play('caminar', true);
+                } else if (this.isMovingRight) {
+                    this.player.setVelocityX(200);
+                    this.player.setFlipX(false);
+                    this.player.anims.play('caminar', true);
+                } else {
+                    this.player.setVelocityX(0);
+                    this.player.anims.play('quieto');
+                }
 
-                // IA Simple
+                // CPU mira siempre al jugador
                 if (this.cpu.hp > 0) {
-                    let dist = this.cpu.x - this.player.x;
-                    if (dist > 150) this.cpu.setVelocityX(-80);
-                    else if (dist < -150) this.cpu.setVelocityX(80);
-                    else this.cpu.setVelocityX(0);
                     this.cpu.setFlipX(this.cpu.x > this.player.x);
+                    if (Math.abs(this.cpu.x - this.player.x) > 150) {
+                        this.cpu.setVelocityX(this.cpu.x > this.player.x ? -60 : 60);
+                        this.cpu.anims.play('caminar', true);
+                    } else {
+                        this.cpu.setVelocityX(0);
+                        this.cpu.anims.play('quieto');
+                    }
                 }
             }
 
             lanzarObjeto(quien) {
-                let obj = this.projectiles.create(quien.x, quien.y, 'objeto');
+                const tipos = [
+                    { nombre: 'Cojín', color: 0x3498db, escala: 1.5 },
+                    { nombre: 'Mando', color: 0x2c3e50, escala: 0.8 },
+                    { nombre: 'Jarrón', color: 0xecf0f1, escala: 1.2 }
+                ];
+                let t = tipos[Math.floor(Math.random() * tipos.length)];
+                
+                let obj = this.projectiles.create(quien.x, quien.y, 'objeto_base');
+                obj.setTint(t.color).setScale(t.escala);
+                
                 let dir = quien.flipX ? -1 : 1;
-                obj.setVelocity(400 * dir, -150);
-                obj.setAngularVelocity(300);
+                obj.setVelocity(450 * dir, -180);
+                obj.setAngularVelocity(500);
                 obj.owner = quien;
             }
 
@@ -122,14 +146,16 @@
                 if (proyectil.owner === personaje) return;
                 proyectil.destroy();
                 personaje.hp -= 10;
-                
                 let fillId = (personaje === this.player) ? 'p1-fill' : 'cpu-fill';
                 document.getElementById(fillId).style.width = personaje.hp + "%";
-
+                
                 personaje.setTint(0xffffff);
                 this.time.delayedCall(100, () => personaje.setTint(personaje === this.player ? 0x3498db : 0xe74c3c));
 
-                if (personaje.hp <= 0) { alert(personaje === this.player ? "¡OH NO!" : "¡VICTORIA!"); location.reload(); }
+                if (personaje.hp <= 0) {
+                    alert(personaje === this.player ? "¡DERROTA DOMÉSTICA!" : "¡ERES EL REY DEL SALÓN!");
+                    location.reload();
+                }
             }
         }
 
@@ -138,7 +164,7 @@
             width: window.innerWidth,
             height: window.innerHeight,
             parent: 'game-container',
-            physics: { default: 'arcade', arcade: { gravity: { y: 500 } } },
+            physics: { default: 'arcade', arcade: { gravity: { y: 600 } } },
             scene: GameScene
         };
         new Phaser.Game(config);
