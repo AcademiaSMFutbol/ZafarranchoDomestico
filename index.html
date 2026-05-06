@@ -2,143 +2,145 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Zafarrancho Doméstico - Battle Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zafarrancho Doméstico - Móvil</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Comic Sans MS', 'Courier New', sans-serif; color: white; text-transform: uppercase; }
-        
-        /* Pantalla de Espera con Fondo y Personajes */
-        #setup-screen { position: absolute; background-image: url('image-1.png'); background-size: cover; background-position: center; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 1s; }
-        
-        /* Capa de "Grilla" Retro para darle toque de juego */
-        #setup-screen::after { content: ''; position: absolute; width: 100%; height: 100%; background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent); background-size: 50px 50px; z-index: -1; }
-
-        .header-title { font-size: 48px; text-shadow: 4px 4px 0 #e74c3c, -2px -2px 0 #3498db; margin-bottom: 5px; }
-        .sub-title { font-size: 18px; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; border: 2px solid #fff; }
-
-        .qr-area { display: flex; gap: 60px; margin-top: 30px; align-items: flex-end; position: relative; }
-        .qr-box { background: white; padding: 15px; border-radius: 15px; text-align: center; color: black; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 5px solid #fff; transition: transform 0.3s; }
-        .qr-box:hover { transform: scale(1.05); }
-        .qr-box b { font-size: 18px; margin-top: 10px; display: block; }
-        
-        /* Placeholders de personajes en los lados */
-        .char-wait { position: absolute; bottom: 0; width: 150px; height: 200px; background-size: contain; background-repeat: no-repeat; opacity: 0.9; }
-        #char-samy { left: -180px; background-image: url('https://labs.phaser.io/assets/sprites/p1.png'); /* Placeholder Samy */ }
-        #char-patri { left: -220px; bottom: 80px; background-image: url('https://labs.phaser.io/assets/sprites/p1.png'); /* Placeholder Patri */ transform: scale(0.8); }
-        #char-eze { right: -180px; background-image: url('https://labs.phaser.io/assets/sprites/p2.png'); /* Placeholder Ezequiel */ }
-        #char-maria { right: -220px; bottom: 80px; background-image: url('https://labs.phaser.io/assets/sprites/p2.png'); /* Placeholder María */ transform: scale(0.8); }
-
-        #status { font-size: 24px; margin-top: 30px; background: #e74c3c; padding: 10px 30px; border-radius: 30px; border: 3px solid #fff; animation: pulse 1.5s infinite; }
-        
-        canvas { border: 5px solid #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        body { margin: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; width: 95%; display: flex; justify-content: space-between; z-index: 10; pointer-events: none; }
+        .health-bar { width: 120px; height: 15px; background: #555; border: 2px solid #fff; border-radius: 5px; overflow: hidden; }
+        .fill { width: 100%; height: 100%; transition: width 0.3s; }
+        #p1-fill { background: #3498db; }
+        #cpu-fill { background: #e74c3c; }
+        #label { color: white; font-size: 12px; font-weight: bold; text-shadow: 1px 1px #000; }
     </style>
 </head>
 <body>
-    <div id="setup-screen">
-        <div class="header-title">ZAFARRANCHO DOMÉSTICO</div>
-        <div class="sub-title">ESCANEAD LOS QR PARA UNIRSE A LA BATALLA</div>
-        
-        <div class="qr-area">
-            <div id="char-samy" class="char-wait"></div>
-            <div id="char-patri" class="char-wait"></div>
-
-            <div class="qr-box">
-                <div id="qr-p1"></div>
-                <b>JUGADOR 1</b>
-            </div>
-            <div class="qr-box">
-                <div id="qr-p2"></div>
-                <b>JUGADOR 2</b>
-            </div>
-
-            <div id="char-eze" class="char-wait"></div>
-            <div id="char-maria" class="char-wait"></div>
+    <div id="ui">
+        <div>
+            <div id="label">TÚ</div>
+            <div class="health-bar"><div id="p1-fill" class="fill"></div></div>
         </div>
-        
-        <div id="status">ESPERANDO CONEXIÓN...</div>
+        <div>
+            <div id="label" style="text-align: right;">CPU</div>
+            <div class="health-bar"><div id="cpu-fill" class="fill"></div></div>
+        </div>
     </div>
-    
     <div id="game-container"></div>
 
     <script>
-        const ROOM_ID = 'zafarrancho-familiar-2024';
-        const base_url = window.location.href.split('index.html')[0];
-        const controller_url = base_url + "controller.html?id=" + ROOM_ID;
+        class GameScene extends Phaser.Scene {
+            constructor() { super('GameScene'); }
 
-        // Generación de QR funcionales
-        new QRCode(document.getElementById("qr-p1"), { text: controller_url + "&p=1", width: 140, height: 140, colorDark : "#3498db" });
-        new QRCode(document.getElementById("qr-p2"), { text: controller_url + "&p=2", width: 140, height: 140, colorDark : "#e74c3c" });
-
-        class MainGame extends Phaser.Scene {
-            constructor() { super('MainGame'); }
             preload() {
-                // Precarga de activos funcionales
-                this.load.image('ball', 'https://labs.phaser.io/assets/sprites/apple.png');
-                this.load.spritesheet('char', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+                this.load.image('fondo', 'image_1.png');
+                this.load.image('objeto', 'https://labs.phaser.io/assets/sprites/apple.png');
+                this.load.spritesheet('munequito', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
             }
+
             create() {
-                // (Misma lógica de físicas y combate que definimos como Core)
-                let platforms = this.physics.add.staticGroup();
-                platforms.create(400, 580, null).setDisplaySize(800, 40).refreshBody();
-                this.p1 = this.createPlayer(150, 400, 0x3498db);
-                this.p2 = this.createPlayer(650, 400, 0xe74c3c);
-                this.p2.setFlipX(true);
-                this.physics.add.collider([this.p1, this.p2], platforms);
+                const W = this.cameras.main.width;
+                const H = this.cameras.main.height;
+
+                this.add.image(W/2, H/2, 'fondo').setDisplaySize(W, H);
+                
+                let ground = this.physics.add.staticGroup();
+                ground.create(W/2, H - 20, null).setDisplaySize(W, 40).setAlpha(0).refreshBody();
+
+                this.player = this.physics.add.sprite(100, H-100, 'munequito').setScale(2).setTint(0x3498db);
+                this.player.setCollideWorldBounds(true);
+                this.player.hp = 100;
+
+                this.cpu = this.physics.add.sprite(W-100, H-100, 'munequito').setScale(2).setTint(0xe74c3c);
+                this.cpu.setCollideWorldBounds(true);
+                this.cpu.setFlipX(true);
+                this.cpu.hp = 100;
+
+                this.physics.add.collider([this.player, this.cpu], ground);
                 this.projectiles = this.physics.add.group();
-                this.physics.add.overlap(this.projectiles, [this.p1, this.p2], this.hitPlayer, null, this);
-                this.initNetwork();
+                this.physics.add.overlap(this.projectiles, [this.player, this.cpu], this.recibirGolpe, null, this);
+
+                // --- CONTROLES TÁCTILES ---
+                this.input.addPointer(2); // Multitouch
+                
+                // Botón Izquierda
+                this.btnLeft = this.add.rectangle(W*0.15, H*0.8, W*0.25, H*0.3, 0xffffff, 0.2).setInteractive();
+                this.add.text(W*0.12, H*0.78, '⬅️', { fontSize: '40px' });
+
+                // Botón Derecha
+                this.btnRight = this.add.rectangle(W*0.4, H*0.8, W*0.25, H*0.3, 0xffffff, 0.2).setInteractive();
+                this.add.text(W*0.37, H*0.78, '➡️', { fontSize: '40px' });
+
+                // Botón Ataque (Derecha de la pantalla)
+                this.btnFire = this.add.rectangle(W*0.8, H*0.8, W*0.35, H*0.3, 0xff0000, 0.3).setInteractive();
+                this.add.text(W*0.75, H*0.78, '💥', { fontSize: '50px' });
+
+                // Lógica de botones
+                this.isMovingLeft = false;
+                this.isMovingRight = false;
+
+                this.btnLeft.on('pointerdown', () => { this.isMovingLeft = true; this.player.setFlipX(true); });
+                this.btnLeft.on('pointerup', () => this.isMovingLeft = false);
+                this.btnLeft.on('pointerout', () => this.isMovingLeft = false);
+
+                this.btnRight.on('pointerdown', () => { this.isMovingRight = true; this.player.setFlipX(false); });
+                this.btnRight.on('pointerup', () => this.isMovingRight = false);
+                this.btnRight.on('pointerout', () => this.isMovingRight = false);
+
+                this.btnFire.on('pointerdown', () => this.lanzarObjeto(this.player));
+
+                // IA
+                this.time.addEvent({ delay: 2000, callback: this.ataqueCPU, callbackScope: this, loop: true });
             }
 
-            createPlayer(x, y, color) {
-                let p = this.physics.add.sprite(x, y, 'char').setScale(2).setTint(color);
-                p.setCollideWorldBounds(true);
-                p.health = 100;
-                return p;
+            update() {
+                if (this.isMovingLeft) this.player.setVelocityX(-200);
+                else if (this.isMovingRight) this.player.setVelocityX(200);
+                else this.player.setVelocityX(0);
+
+                // IA Simple
+                if (this.cpu.hp > 0) {
+                    let dist = this.cpu.x - this.player.x;
+                    if (dist > 150) this.cpu.setVelocityX(-80);
+                    else if (dist < -150) this.cpu.setVelocityX(80);
+                    else this.cpu.setVelocityX(0);
+                    this.cpu.setFlipX(this.cpu.x > this.player.x);
+                }
             }
 
-            initNetwork() {
-                const peer = new Peer(ROOM_ID);
-                this.conns = [];
-                peer.on('connection', (conn) => {
-                    this.conns.push(conn);
-                    document.getElementById('status').innerText = `LISTOS: ${this.conns.length}/2`;
-                    
-                    if(this.conns.length === 2) {
-                        document.getElementById('status').innerText = "¡A BATALLAR!";
-                        document.getElementById('status').style.background = "#2ecc71";
-                        setTimeout(() => { document.getElementById('setup-screen').style.opacity = '0'; setTimeout(()=> document.getElementById('setup-screen').style.display = 'none', 1000); }, 1500);
-                    }
-                    conn.on('data', (data) => this.processInput(data, this.conns.indexOf(conn)));
-                });
+            lanzarObjeto(quien) {
+                let obj = this.projectiles.create(quien.x, quien.y, 'objeto');
+                let dir = quien.flipX ? -1 : 1;
+                obj.setVelocity(400 * dir, -150);
+                obj.setAngularVelocity(300);
+                obj.owner = quien;
             }
 
-            processInput(msg, playerIdx) {
-                let p = (playerIdx === 0) ? this.p1 : this.p2;
-                if (msg === 'LEFT_START') p.setVelocityX(-250);
-                else if (msg === 'RIGHT_START') p.setVelocityX(250);
-                else if (msg.includes('STOP')) p.setVelocityX(0);
-                else if (msg === 'ATTACK') this.fire(p);
-                else if (msg === 'DEFEND') p.setAlpha(0.5);
-            }
+            ataqueCPU() { if(this.cpu.hp > 0) this.lanzarObjeto(this.cpu); }
 
-            fire(p) {
-                let obj = this.projectiles.create(p.x, p.y, 'ball');
-                obj.setVelocity(p.flipX ? -500 : 500, -100);
-                obj.owner = p;
-            }
+            recibirGolpe(personaje, proyectil) {
+                if (proyectil.owner === personaje) return;
+                proyectil.destroy();
+                personaje.hp -= 10;
+                
+                let fillId = (personaje === this.player) ? 'p1-fill' : 'cpu-fill';
+                document.getElementById(fillId).style.width = personaje.hp + "%";
 
-            hitPlayer(player, projectile) {
-                if (projectile.owner === player || player.alpha < 1) return;
-                projectile.destroy();
-                player.health -= 10;
-                if (player.health <= 0) { alert("¡Victoria!"); location.reload(); }
+                personaje.setTint(0xffffff);
+                this.time.delayedCall(100, () => personaje.setTint(personaje === this.player ? 0x3498db : 0xe74c3c));
+
+                if (personaje.hp <= 0) { alert(personaje === this.player ? "¡OH NO!" : "¡VICTORIA!"); location.reload(); }
             }
         }
 
-        const config = { type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', physics: { default: 'arcade', arcade: { gravity: { y: 600 } } }, scene: MainGame };
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 500 } } },
+            scene: GameScene
+        };
         new Phaser.Game(config);
     </script>
 </body>
