@@ -2,65 +2,93 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Zafarrancho Doméstico - Conexión QR</title>
+    <title>Zafarrancho Doméstico - Battle Room</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; color: white; }
-        #setup-screen { position: absolute; background: rgba(0,0,0,0.9); width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-        .qr-container { display: flex; gap: 40px; margin-top: 20px; }
-        .qr-box { background: white; padding: 15px; border-radius: 10px; text-align: center; color: black; }
-        canvas { border: 4px solid #fff; }
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Comic Sans MS', 'Courier New', sans-serif; color: white; text-transform: uppercase; }
+        
+        /* Pantalla de Espera con Fondo y Personajes */
+        #setup-screen { position: absolute; background-image: url('https://i.ibb.co/L9H8v7V/image-1.png'); background-size: cover; background-position: center; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 1s; }
+        
+        /* Capa de "Grilla" Retro para darle toque de juego */
+        #setup-screen::after { content: ''; position: absolute; width: 100%; height: 100%; background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent); background-size: 50px 50px; z-index: -1; }
+
+        .header-title { font-size: 48px; text-shadow: 4px 4px 0 #e74c3c, -2px -2px 0 #3498db; margin-bottom: 5px; }
+        .sub-title { font-size: 18px; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; border: 2px solid #fff; }
+
+        .qr-area { display: flex; gap: 60px; margin-top: 30px; align-items: flex-end; position: relative; }
+        .qr-box { background: white; padding: 15px; border-radius: 15px; text-align: center; color: black; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border: 5px solid #fff; transition: transform 0.3s; }
+        .qr-box:hover { transform: scale(1.05); }
+        .qr-box b { font-size: 18px; margin-top: 10px; display: block; }
+        
+        /* Placeholders de personajes en los lados */
+        .char-wait { position: absolute; bottom: 0; width: 150px; height: 200px; background-size: contain; background-repeat: no-repeat; opacity: 0.9; }
+        #char-samy { left: -180px; background-image: url('https://labs.phaser.io/assets/sprites/p1.png'); /* Placeholder Samy */ }
+        #char-patri { left: -220px; bottom: 80px; background-image: url('https://labs.phaser.io/assets/sprites/p1.png'); /* Placeholder Patri */ transform: scale(0.8); }
+        #char-eze { right: -180px; background-image: url('https://labs.phaser.io/assets/sprites/p2.png'); /* Placeholder Ezequiel */ }
+        #char-maria { right: -220px; bottom: 80px; background-image: url('https://labs.phaser.io/assets/sprites/p2.png'); /* Placeholder María */ transform: scale(0.8); }
+
+        #status { font-size: 24px; margin-top: 30px; background: #e74c3c; padding: 10px 30px; border-radius: 30px; border: 3px solid #fff; animation: pulse 1.5s infinite; }
+        
+        canvas { border: 5px solid #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="setup-screen">
-        <h1>¡ZAFARRANCHO DOMÉSTICO!</h1>
-        <p>Escanead para conectar los mandos:</p>
-        <div class="qr-container">
+        <div class="header-title">ZAFARRANCHO DOMÉSTICO</div>
+        <div class="sub-title">ESCANEAD LOS QR PARA UNIRSE A LA BATALLA</div>
+        
+        <div class="qr-area">
+            <div id="char-samy" class="char-wait"></div>
+            <div id="char-patri" class="char-wait"></div>
+
             <div class="qr-box">
                 <div id="qr-p1"></div>
-                <p><b>JUGADOR 1</b></p>
+                <b>JUGADOR 1</b>
             </div>
             <div class="qr-box">
                 <div id="qr-p2"></div>
-                <p><b>JUGADOR 2</b></p>
+                <b>JUGADOR 2</b>
             </div>
+
+            <div id="char-eze" class="char-wait"></div>
+            <div id="char-maria" class="char-wait"></div>
         </div>
-        <p id="status">Esperando conexión...</p>
+        
+        <div id="status">ESPERANDO CONEXIÓN...</div>
     </div>
+    
     <div id="game-container"></div>
 
     <script>
         const ROOM_ID = 'zafarrancho-familiar-2024';
-        // Generamos la URL del mando basada en tu repositorio de GitHub
         const base_url = window.location.href.split('index.html')[0];
         const controller_url = base_url + "controller.html?id=" + ROOM_ID;
 
-        // Generar los QR al cargar
-        new QRCode(document.getElementById("qr-p1"), { text: controller_url, width: 150, height: 150 });
-        new QRCode(document.getElementById("qr-p2"), { text: controller_url, width: 150, height: 150 });
+        // Generación de QR funcionales
+        new QRCode(document.getElementById("qr-p1"), { text: controller_url + "&p=1", width: 140, height: 140, colorDark : "#3498db" });
+        new QRCode(document.getElementById("qr-p2"), { text: controller_url + "&p=2", width: 140, height: 140, colorDark : "#e74c3c" });
 
         class MainGame extends Phaser.Scene {
             constructor() { super('MainGame'); }
             preload() {
+                // Precarga de activos funcionales
                 this.load.image('ball', 'https://labs.phaser.io/assets/sprites/apple.png');
                 this.load.spritesheet('char', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
             }
             create() {
-                // ... (Misma lógica de físicas anterior)
+                // (Misma lógica de físicas y combate que definimos como Core)
                 let platforms = this.physics.add.staticGroup();
                 platforms.create(400, 580, null).setDisplaySize(800, 40).refreshBody();
-
                 this.p1 = this.createPlayer(150, 400, 0x3498db);
                 this.p2 = this.createPlayer(650, 400, 0xe74c3c);
                 this.p2.setFlipX(true);
-
                 this.physics.add.collider([this.p1, this.p2], platforms);
                 this.projectiles = this.physics.add.group();
                 this.physics.add.overlap(this.projectiles, [this.p1, this.p2], this.hitPlayer, null, this);
-
                 this.initNetwork();
             }
 
@@ -76,13 +104,13 @@
                 this.conns = [];
                 peer.on('connection', (conn) => {
                     this.conns.push(conn);
-                    document.getElementById('status').innerText = `Jugadores conectados: ${this.conns.length}/2`;
+                    document.getElementById('status').innerText = `LISTOS: ${this.conns.length}/2`;
                     
-                    // Cuando los dos están conectados, ocultamos la pantalla de QR
                     if(this.conns.length === 2) {
-                        setTimeout(() => { document.getElementById('setup-screen').style.display = 'none'; }, 1000);
+                        document.getElementById('status').innerText = "¡A BATALLAR!";
+                        document.getElementById('status').style.background = "#2ecc71";
+                        setTimeout(() => { document.getElementById('setup-screen').style.opacity = '0'; setTimeout(()=> document.getElementById('setup-screen').style.display = 'none', 1000); }, 1500);
                     }
-
                     conn.on('data', (data) => this.processInput(data, this.conns.indexOf(conn)));
                 });
             }
