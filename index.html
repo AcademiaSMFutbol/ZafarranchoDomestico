@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Zafarrancho Doméstico - El Juego</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        #game-container { border: 4px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #ui-info { position: absolute; top: 10px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="ui-info">ID de Sala: <strong id="peer-id">Conectando...</strong><br>Conecta los móviles para jugar</div>
+    <div id="game-container"></div>
+
+    <script>
+        const ROOM_ID = 'zafarrancho-familiar-2024'; // ID Fijo para facilitar conexión
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            physics: { default: 'arcade', arcade: { gravity: { y: 800 }, debug: false } },
+            scene: { preload: preload, create: create, update: update }
+        };
+
+        const game = new Phaser.Game(config);
+        let player1, player2, cursors, ball;
+        let peer;
+
+        function preload() {
+            // Fondo del salón desordenado
+            this.load.image('fondo', 'https://midu.dev/images/wallpapers/retro-game-chamber.png'); // Placeholder funcional
+            this.load.spritesheet('p1', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+            this.load.spritesheet('p2', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+            this.load.image('objeto', 'https://labs.phaser.io/assets/sprites/apple.png');
+        }
+
+        function create() {
+            this.add.image(400, 300, 'fondo').setScale(2);
+            document.getElementById('peer-id').innerText = ROOM_ID;
+
+            // Suelo invisible
+            let platforms = this.physics.add.staticGroup();
+            platforms.create(400, 580, 'objeto').setScale(50, 1).setAlpha(0);
+
+            // Personajes
+            player1 = this.physics.add.sprite(150, 450, 'p1').setScale(1.5);
+            player2 = this.physics.add.sprite(650, 450, 'p2').setScale(1.5).setFlipX(true);
+            
+            player1.setCollideWorldBounds(true);
+            player2.setCollideWorldBounds(true);
+            this.physics.add.collider(player1, platforms);
+            this.physics.add.collider(player2, platforms);
+
+            // Inicializar PeerJS para recibir mandos
+            peer = new Peer(ROOM_ID);
+            peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    handleInput(data, conn.peer);
+                });
+            });
+        }
+
+        function handleInput(cmd, peerId) {
+            // Lógica simple para mover según el comando del móvil
+            // Aquí se asignará J1 o J2 según quién conecte primero
+            console.log("Comando recibido: " + cmd);
+        }
+
+        function update() {}
+    </script>
+</body>
+</html>
