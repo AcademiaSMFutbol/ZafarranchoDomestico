@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mando Zafarrancho</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background: #222; overflow: hidden; display: grid; 
+               grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100vh; gap: 10px; padding: 10px; box-sizing: border-box; }
+        .btn { border: none; border-radius: 15px; color: white; font-size: 24px; font-weight: bold; display: flex; 
+               align-items: center; justify-content: center; text-transform: uppercase; active { opacity: 0.7; transform: scale(0.95); } }
+        .left { background: #3498db; }
+        .right { background: #2ecc71; }
+        .defend { background: #f1c40f; }
+        .attack { background: #e74c3c; }
+    </style>
+</head>
+<body>
+    <button class="btn left" id="left">⬅️</button>
+    <button class="btn right" id="right">➡️</button>
+    <button class="btn defend" id="defend">🛡️</button>
+    <button class="btn attack" id="attack">💥</button>
+
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('id'); // ID de la partida en el portátil
+        const peer = new Peer();
+        
+        peer.on('open', (id) => {
+            const conn = peer.connect(gameId);
+            conn.on('open', () => {
+                // Función para enviar comandos
+                const sendCmd = (cmd) => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    conn.send(cmd);
+                };
+
+                // Asignar eventos a los botones
+                document.getElementById('left').ontouchstart = () => sendCmd('LEFT_START');
+                document.getElementById('left').ontouchend = () => sendCmd('LEFT_STOP');
+                document.getElementById('right').ontouchstart = () => sendCmd('RIGHT_START');
+                document.getElementById('right').ontouchend = () => sendCmd('RIGHT_STOP');
+                document.getElementById('defend').onclick = () => sendCmd('DEFEND');
+                document.getElementById('attack').onclick = () => sendCmd('ATTACK');
+            });
+        });
+    </script>
+</body>
+</html>
+
