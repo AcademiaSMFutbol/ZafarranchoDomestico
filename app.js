@@ -240,14 +240,14 @@ function renderTimeline() {
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-2">
-          <p class="text-sm font-semibold text-slate-100 truncate">${escHtml(ev.titulo)}</p>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
+        <div class="flex items-start justify-between gap-1 min-w-0">
+          <p class="text-sm font-semibold truncate flex-1 min-w-0" style="color:#fff;">${escHtml(ev.titulo)}</p>
+          <div class="flex items-center gap-1 flex-shrink-0 ml-1">
             ${renderAlertIcons(ev)}
-            <button onclick="openEditModal('${ev.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-indigo-400">
+            <button onclick="openEditModal('${ev.id}')" class="action-btn-hover text-slate-500 hover:text-indigo-400">
               ${Icon.render('edit', 13)}
             </button>
-            <button onclick="deleteRow('${ev.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-red-400">
+            <button onclick="deleteRow('${ev.id}')" class="action-btn-hover text-slate-500 hover:text-red-400">
               ${Icon.render('trash', 13)}
             </button>
           </div>
@@ -285,14 +285,14 @@ function renderInbox() {
       <input type="checkbox" class="custom-checkbox mt-0.5" ${t.estado === 'completada' ? 'checked' : ''}
              onchange="toggleComplete('${t.id}', this.checked)">
       <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-2">
-          <p class="task-title text-sm font-medium text-slate-200 truncate">${escHtml(t.titulo)}</p>
-          <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="flex items-start justify-between gap-1 min-w-0">
+          <p class="task-title text-sm font-medium truncate flex-1 min-w-0" style="color:#ccc;">${escHtml(t.titulo)}</p>
+          <div class="flex items-center gap-1 flex-shrink-0 ml-1">
             ${renderAlertIcons(t)}
-            <button onclick="openEditModal('${t.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-indigo-400">
+            <button onclick="openEditModal('${t.id}')" class="action-btn-hover text-slate-500 hover:text-indigo-400">
               ${Icon.render('edit', 13)}
             </button>
-            <button onclick="deleteRow('${t.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-red-400">
+            <button onclick="deleteRow('${t.id}')" class="action-btn-hover text-slate-500 hover:text-red-400">
               ${Icon.render('trash', 13)}
             </button>
           </div>
