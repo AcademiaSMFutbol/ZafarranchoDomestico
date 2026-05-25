@@ -1,0 +1,17 @@
+{
+  "name": "Agenda Corporativa",
+  "short_name": "Agenda",
+  "description": "Agenda corporativa PWA con sincronización GitHub",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%234f46e5'/><rect x='36' y='48' width='120' height='108' rx='10' fill='none' stroke='white' stroke-width='10'/><line x1='72' y1='36' x2='72' y2='60' stroke='white' stroke-width='10' stroke-linecap='round'/><line x1='120' y1='36' x2='120' y2='60' stroke='white' stroke-width='10' stroke-linecap='round'/><line x1='36' y1='84' x2='156' y2='84' stroke='white' stroke-width='10'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
