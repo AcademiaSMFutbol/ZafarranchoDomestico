@@ -3,3 +3,4 @@ id,tipo,titulo,fecha,hora_inicio,hora_fin,prioridad,estado,notas,push_activo,ema
 1779670761223-mbpe2,tarea,"Carteles para captación Alcotán y Campus CEIP ESCALERITAS",2026-05-25,09:00,09:15,alta,pendiente,"",true,false
 1779672181614-4g7qw,tarea,"Pasar los pagos a la app",2026-05-25,,,alta,pendiente,"",true,false
 1779690430374-feq69,tarea,"Revisar inscripciones campus de verano",2026-05-25,09:00,,alta,pendiente,"",true,false
+1779720637909-c6ukv,tarea,"Preparar semana final de actividades",2026-05-27,08:00,,media,pendiente,"",true,true
