@@ -140,7 +140,7 @@ async function fetchCsv() {
   const cfg = loadConfig();
   const path = `/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.csvPath || 'agenda.csv'}`;
   const data = await ghRequest('GET', path);
-  const text = atob(data.content.replace(/\n/g, ''));
+  const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
   return { rows: csvParse(text), sha: data.sha };
 }
 
@@ -458,10 +458,10 @@ function renderFormModal(data) {
     <div class="modal-backdrop" onclick="closeFormModal(event)">
       <div class="modal-box" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="text-base font-bold text-slate-100">
-            ${isEdit ? 'Editar' : 'Nueva'} ${data.tipo === 'evento' ? 'Evento' : 'Tarea'}
+          <h2 class="text-base font-bold" style="color:#fff;">
+            ${isEdit ? 'Editar' : 'Nueva'} ${_currentTipo === 'evento' ? 'Evento' : 'Tarea'}
           </h2>
-          <button onclick="closeFormModal()" class="text-slate-500 hover:text-slate-300 transition-colors">
+          <button onclick="closeFormModal()" style="color:#666;" class="hover:text-white transition-colors">
             ${Icon.render('x', 20)}
           </button>
         </div>
@@ -471,13 +471,11 @@ function renderFormModal(data) {
             <label class="form-label">Tipo</label>
             <div class="flex gap-2">
               <button id="btn-tipo-tarea" onclick="setTipo('tarea')"
-                class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-all
-                       ${data.tipo === 'tarea' ? 'bg-indigo-700 border-indigo-500 text-white' : 'bg-transparent border-slate-700 text-slate-400 hover:border-indigo-600'}">
+                class="tipo-btn ${_currentTipo === 'tarea' ? 'active' : ''}">
                 ${Icon.render('inbox', 14, 'inline mr-1')} Tarea
               </button>
               <button id="btn-tipo-evento" onclick="setTipo('evento')"
-                class="flex-1 py-2 rounded-lg text-sm font-semibold border transition-all
-                       ${data.tipo === 'evento' ? 'bg-indigo-700 border-indigo-500 text-white' : 'bg-transparent border-slate-700 text-slate-400 hover:border-indigo-600'}">
+                class="tipo-btn ${_currentTipo === 'evento' ? 'active' : ''}">
                 ${Icon.render('calendar', 14, 'inline mr-1')} Evento
               </button>
             </div>
@@ -495,7 +493,7 @@ function renderFormModal(data) {
             </div>
             <div>
               <label class="form-label">Inicio</label>
-              <input id="f-hora-inicio" type="time" class="form-input" value="${data.hora_inicio || ''}" id="hora-inicio-field">
+              <input id="f-hora-inicio" type="time" class="form-input" value="${data.hora_inicio || ''}">
             </div>
             <div>
               <label class="form-label">Fin</label>
@@ -515,8 +513,8 @@ function renderFormModal(data) {
             <div>
               <label class="form-label">Estado</label>
               <select id="f-estado" class="form-input">
-                <option value="pendiente"   ${data.estado==='pendiente'  ?'selected':''}>Pendiente</option>
-                <option value="completada"  ${data.estado==='completada' ?'selected':''}>Completada</option>
+                <option value="pendiente"  ${data.estado==='pendiente' ?'selected':''}>Pendiente</option>
+                <option value="completada" ${data.estado==='completada'?'selected':''}>Completada</option>
               </select>
             </div>
           </div>
@@ -526,18 +524,18 @@ function renderFormModal(data) {
             <textarea id="f-notas" class="posit-area" rows="3" placeholder="Notas o descripción...">${escHtml(data.notas || '')}</textarea>
           </div>
 
-          <div class="flex items-center justify-between py-3 border-t border-slate-700 border-b">
-            <span class="text-sm text-slate-400">Alertas</span>
+          <div class="flex items-center justify-between py-3" style="border-top:1px solid #1f1f1f;border-bottom:1px solid #1f1f1f;">
+            <span class="text-sm" style="color:#888;">Alertas</span>
             <div class="flex gap-5">
               <label class="toggle-wrap cursor-pointer">
                 ${Icon.render('bell', 14, 'text-amber-400')}
                 <input type="checkbox" id="f-push" class="toggle" ${data.push_activo==='true'?'checked':''}>
-                <span class="text-xs text-slate-400">Push</span>
+                <span class="text-xs" style="color:#888;">Push</span>
               </label>
               <label class="toggle-wrap cursor-pointer">
                 ${Icon.render('mail', 14, 'text-indigo-400')}
                 <input type="checkbox" id="f-email" class="toggle" ${data.email_activo==='true'?'checked':''}>
-                <span class="text-xs text-slate-400">Email</span>
+                <span class="text-xs" style="color:#888;">Email</span>
               </label>
             </div>
           </div>
@@ -625,15 +623,15 @@ function openSettings() {
     <div class="modal-backdrop" onclick="closeSettings(event)">
       <div class="modal-box" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between mb-5">
-          <h2 class="text-base font-bold text-slate-100 flex items-center gap-2">
+          <h2 class="text-base font-bold flex items-center gap-2" style="color:#fff;">
             ${Icon.render('settings', 18, 'text-indigo-400')} Configuración GitHub
           </h2>
-          <button onclick="closeSettings()" class="text-slate-500 hover:text-slate-300 transition-colors">
+          <button onclick="closeSettings()" style="color:#666;" class="hover:text-white transition-colors">
             ${Icon.render('x', 20)}
           </button>
         </div>
 
-        <div class="bg-amber-950 border border-amber-800 rounded-lg p-3 mb-5 text-xs text-amber-200 flex gap-2">
+        <div class="warning-box mb-5">
           ${Icon.render('alert-circle', 14, 'text-amber-400 flex-shrink-0 mt-0.5')}
           <span>Tu Token de Acceso Personal (PAT) se almacena <strong>únicamente en el localStorage</strong> de este navegador y nunca se expone en el código fuente.</span>
         </div>
@@ -659,11 +657,12 @@ function openSettings() {
                      placeholder="ghp_xxxxxxxxxxxx..."
                      autocomplete="off">
               <button onclick="toggleTokenVisibility()"
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors"
+                style="color:#666;">
                 ${Icon.render('eye', 15)}
               </button>
             </div>
-            <p class="text-xs text-slate-500 mt-1">Scopes requeridos: <code class="text-indigo-400">repo</code> o <code class="text-indigo-400">contents:write</code></p>
+            <p class="text-xs mt-1" style="color:#666;">Scopes requeridos: <code style="color:#4ade80;">repo</code> o <code style="color:#4ade80;">contents:write</code></p>
           </div>
         </div>
 
