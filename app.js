@@ -140,7 +140,10 @@ async function fetchCsv() {
   const cfg = loadConfig();
   const path = `/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.csvPath || 'agenda.csv'}`;
   const data = await ghRequest('GET', path);
-  const text = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
+  const binary = atob(data.content.replace(/\n/g, ''));
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const text = new TextDecoder('utf-8').decode(bytes);
   return { rows: csvParse(text), sha: data.sha };
 }
 
