@@ -210,7 +210,7 @@
   <!-- App JS -->
   <script src="app.js"></script>
 
-  <!-- Show onboarding if not configured -->
+  <!-- Show onboarding if not configured + register Service Worker -->
   <script>
     (function() {
       try {
@@ -221,6 +221,12 @@
           }, 1200);
         }
       } catch(e) {}
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+      }
     })();
   </script>
 </body>
