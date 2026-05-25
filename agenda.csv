@@ -1,2 +1,3 @@
 id,tipo,titulo,fecha,hora_inicio,hora_fin,prioridad,estado,notas,push_activo,email_activo
 1779670660567-9obae,tarea,"Enviar mensaje semanal al canal de WhatsApp",2026-05-25,08:00,08:05,alta,pendiente,"",true,false
+1779670761223-mbpe2,tarea,"Carteles para captación Alcotán y Campus CEIP ESCALERITAS",2026-05-25,09:00,09:15,alta,pendiente,"",true,false
