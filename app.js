@@ -372,6 +372,7 @@ async function syncData() {
       toast('Eventos vencidos movidos a tareas', 'info');
     }
     renderAll();
+    scheduleNotifications(STATE.rows);
     toast('Sincronizado con GitHub', 'success', 2500);
   } catch (e) {
     toast(`Error: ${e.message}`, 'error', 5000);
@@ -669,6 +670,66 @@ function openSettings() {
           </div>
         </div>
 
+        </div>
+
+        <!-- ── Notificaciones ──────────────────────────── -->
+        <div class="mt-5 pt-5" style="border-top:1px solid #1f1f1f;">
+          <p class="form-label mb-3 flex items-center gap-2">
+            ${Icon.render('bell', 12, 'inline')} Push &amp; Email
+          </p>
+
+          <!-- Permiso push -->
+          <div class="flex items-center justify-between mb-4 p-3 rounded-lg" style="background:#071a08;border:1px solid #1b4d1e;">
+            <div>
+              <p class="text-sm font-medium" style="color:#a5d6a7;">Notificaciones Push</p>
+              <p class="text-xs mt-0.5" style="color:#666;" id="notif-perm-label">
+                ${Notification && Notification.permission === 'granted' ? '✅ Permiso concedido' :
+                  Notification && Notification.permission === 'denied'  ? '❌ Bloqueado en el navegador' :
+                  '⏳ Sin permiso'}
+              </p>
+            </div>
+            <button onclick="grantNotifPermission()" class="btn-ghost text-xs !py-1.5 !px-3"
+              ${Notification && Notification.permission === 'granted' ? 'disabled style="opacity:.4;"' : ''}>
+              Activar
+            </button>
+          </div>
+
+          <!-- Email config -->
+          <div class="space-y-3">
+            <div>
+              <label class="form-label">Email destino (para recordatorios)</label>
+              <input id="cfg-emailTo" class="form-input" type="email"
+                     value="${escHtml(cfg.emailTo||'')}" placeholder="tu@email.com">
+            </div>
+
+            <details class="group">
+              <summary class="text-xs cursor-pointer select-none"
+                       style="color:#888; list-style:none;">
+                ▶ Configuración EmailJS
+                <span style="color:#555;"> (necesario para enviar emails)</span>
+              </summary>
+              <div class="space-y-3 mt-3 pl-2" style="border-left:2px solid #1f1f1f;">
+                <div class="warning-box !text-xs">
+                  ${Icon.render('alert-circle', 12, 'flex-shrink-0')}
+                  <span>Crea cuenta gratuita en <strong>emailjs.com</strong> → Email Services → Email Templates. Variables requeridas en la plantilla: <code>to_email</code>, <code>subject</code>, <code>message</code>, <code>titulo</code>.</span>
+                </div>
+                <div>
+                  <label class="form-label">Service ID</label>
+                  <input id="cfg-ejsService" class="form-input" value="${escHtml(cfg.ejsService||'')}" placeholder="service_xxxxxxx">
+                </div>
+                <div>
+                  <label class="form-label">Template ID</label>
+                  <input id="cfg-ejsTemplate" class="form-input" value="${escHtml(cfg.ejsTemplate||'')}" placeholder="template_xxxxxxx">
+                </div>
+                <div>
+                  <label class="form-label">Public Key</label>
+                  <input id="cfg-ejsKey" class="form-input" value="${escHtml(cfg.ejsKey||'')}" placeholder="xxxxxxxxxxxxxxxxxxxxxx">
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
         <div class="flex gap-3 mt-6">
           <button onclick="closeSettings()" class="btn-ghost flex-1">Cancelar</button>
           <button onclick="saveSettings()" class="btn-primary flex-1">
@@ -677,7 +738,7 @@ function openSettings() {
         </div>
 
         ${cfg.token ? `
-        <div class="mt-3 pt-3 border-t border-slate-700">
+        <div class="mt-3 pt-3" style="border-top:1px solid #1f1f1f;">
           <button onclick="clearConfig()" class="btn-danger w-full text-sm">
             ${Icon.render('trash', 14, 'inline mr-1')} Borrar credenciales
           </button>
@@ -712,10 +773,30 @@ async function saveSettings() {
   const token = rawToken && !rawToken.startsWith('•') ? rawToken : cfg.token;
   if (!token) { toast('El Token es obligatorio', 'error'); return; }
 
-  saveConfig({ owner, repo, csvPath, token });
+  const emailTo   = document.getElementById('cfg-emailTo')?.value.trim()    || '';
+  const ejsService  = document.getElementById('cfg-ejsService')?.value.trim()  || '';
+  const ejsTemplate = document.getElementById('cfg-ejsTemplate')?.value.trim() || '';
+  const ejsKey      = document.getElementById('cfg-ejsKey')?.value.trim()      || '';
+
+  saveConfig({ owner, repo, csvPath, token, emailTo, ejsService, ejsTemplate, ejsKey });
+
+  // Inicializar EmailJS si está configurado
+  if (ejsKey && typeof emailjs !== 'undefined') emailjs.init(ejsKey);
+
   closeSettings();
   toast('Configuración guardada', 'success', 2000);
   await syncData();
+}
+
+async function grantNotifPermission() {
+  const granted = await requestNotifPermission();
+  if (granted) {
+    toast('Notificaciones push activadas ✅', 'success');
+    document.getElementById('notif-perm-label').textContent = '✅ Permiso concedido';
+    scheduleNotifications(STATE.rows);
+  } else {
+    toast('Permiso denegado. Actívalo desde la configuración del navegador.', 'error', 5000);
+  }
 }
 
 function clearConfig() {
@@ -727,7 +808,107 @@ function clearConfig() {
   toast('Credenciales borradas', 'info');
 }
 
-// ── Quick Notes ──────────────────────────────────────────────────
+// ── Notifications & Email ─────────────────────────────────────────
+const _notifTimers = new Map();
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  return (await Notification.requestPermission()) === 'granted';
+}
+
+function scheduleNotifications(rows) {
+  _notifTimers.forEach(t => clearTimeout(t));
+  _notifTimers.clear();
+
+  const td  = today();
+  const now = Date.now();
+
+  rows.forEach(row => {
+    if (row.estado === 'completada') return;
+    const wantsPush  = row.push_activo  === 'true';
+    const wantsEmail = row.email_activo === 'true';
+    if (!wantsPush && !wantsEmail) return;
+
+    let fireAt = null;
+
+    if (row.tipo === 'evento' && row.fecha === td && row.hora_inicio) {
+      const [h, m] = row.hora_inicio.split(':').map(Number);
+      fireAt = new Date().setHours(h, m, 0, 0) - 15 * 60 * 1000; // 15 min antes
+    } else if (row.tipo === 'tarea' && row.fecha === td) {
+      fireAt = new Date().setHours(9, 0, 0, 0); // 9:00
+    }
+
+    if (!fireAt) return;
+
+    const delay = fireAt - now;
+    const WINDOW = 10 * 60 * 1000; // si pasó hace menos de 10 min, lanzar ya
+
+    const fire = () => {
+      if (wantsPush)  fireNotif(row);
+      if (wantsEmail) fireEmail(row).catch(() => {});
+    };
+
+    if (delay <= 0 && delay > -WINDOW) {
+      fire();
+    } else if (delay > 0) {
+      _notifTimers.set(row.id, setTimeout(fire, delay));
+    }
+  });
+}
+
+function fireNotif(row) {
+  if (Notification.permission !== 'granted') return;
+  const body = [
+    row.hora_inicio ? `🕐 ${row.hora_inicio}${row.hora_fin ? ' → ' + row.hora_fin : ''}` : null,
+    row.notas || null,
+    `Prioridad: ${row.prioridad}`,
+  ].filter(Boolean).join('\n');
+
+  try {
+    new Notification(row.tipo === 'evento' ? `📅 ${row.titulo}` : `📋 ${row.titulo}`, {
+      body,
+      icon: './icon-192.svg',
+      badge: './icon-192.svg',
+      tag: row.id,
+      renotify: true,
+    });
+  } catch(e) { console.warn('Notification error:', e); }
+}
+
+async function fireEmail(row) {
+  const cfg = loadConfig();
+  if (!cfg.emailTo || !cfg.ejsService || !cfg.ejsTemplate || !cfg.ejsKey) return;
+
+  if (typeof emailjs === 'undefined') {
+    console.warn('EmailJS SDK no cargado');
+    return;
+  }
+
+  const subject = row.tipo === 'evento'
+    ? `[Agenda] Evento en 15 min: ${row.titulo}`
+    : `[Agenda] Tarea pendiente: ${row.titulo}`;
+
+  const message = [
+    row.hora_inicio ? `Hora: ${row.hora_inicio}${row.hora_fin ? ' → ' + row.hora_fin : ''}` : null,
+    `Prioridad: ${row.prioridad}`,
+    row.notas ? `Notas: ${row.notas}` : null,
+  ].filter(Boolean).join('\n');
+
+  await emailjs.send(cfg.ejsService, cfg.ejsTemplate, {
+    to_email: cfg.emailTo,
+    subject,
+    message,
+    titulo:    row.titulo,
+    tipo:      row.tipo,
+    hora:      row.hora_inicio || 'Sin hora',
+    prioridad: row.prioridad,
+    notas:     row.notas || '',
+  }, cfg.ejsKey);
+}
+
+
 function loadNotes() {
   document.getElementById('quick-notes').value = localStorage.getItem(NOTES_KEY) || '';
 }
@@ -779,6 +960,7 @@ window.openSettings    = openSettings;
 window.closeSettings   = closeSettings;
 window.saveSettings    = saveSettings;
 window.clearConfig     = clearConfig;
+window.grantNotifPermission = grantNotifPermission;
 window.toggleTokenVisibility = toggleTokenVisibility;
 window.toggleComplete  = toggleComplete;
 window.deleteRow       = deleteRow;
@@ -794,6 +976,13 @@ document.addEventListener('DOMContentLoaded', () => {
   _currentTipo = 'tarea';
 
   const cfg = loadConfig();
+
+  // Inicializar EmailJS si está configurado
+  if (cfg.ejsKey && typeof emailjs !== 'undefined') emailjs.init(cfg.ejsKey);
+
+  // Solicitar permiso de notificaciones en segundo plano
+  requestNotifPermission();
+
   if (cfg.token && cfg.owner && cfg.repo) {
     syncData();
   } else {
