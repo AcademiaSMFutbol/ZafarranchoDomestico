@@ -232,29 +232,26 @@ function renderTimeline() {
   }
 
   container.innerHTML = events.map((ev, i) => `
-    <div class="item-row flex gap-3 p-2.5 relative group" data-id="${ev.id}">
+    <div class="item-row relative" data-id="${ev.id}" onclick="openEditModal('${ev.id}')">
       ${i < events.length - 1 ? '<div class="timeline-line"></div>' : ''}
-      <div class="flex-shrink-0 mt-0.5">
-        <div class="w-9 h-9 rounded-full bg-indigo-950 border border-indigo-700 flex items-center justify-center">
-          ${Icon.render('clock', 15, 'text-indigo-400')}
+      <div style="flex-shrink:0;margin-top:.125rem;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#071a08;border:1px solid #1b4d1e;display:flex;align-items:center;justify-content:center;">
+          ${Icon.render('clock', 13, 'text-indigo-400')}
         </div>
       </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-1 min-w-0">
-          <p class="text-sm font-semibold truncate flex-1 min-w-0" style="color:#fff;">${escHtml(ev.titulo)}</p>
-          <div class="flex items-center gap-1 flex-shrink-0 ml-1">
+      <div class="item-body">
+        <div class="item-title-row">
+          <p class="item-title">${escHtml(ev.titulo)}</p>
+          <div class="item-actions">
             ${renderAlertIcons(ev)}
-            <button onclick="openEditModal('${ev.id}')" class="action-btn-hover text-slate-500 hover:text-indigo-400">
-              ${Icon.render('edit', 13)}
-            </button>
-            <button onclick="deleteRow('${ev.id}')" class="action-btn-hover text-slate-500 hover:text-red-400">
+            <button onclick="event.stopPropagation(); deleteRow('${ev.id}')" class="delete-btn">
               ${Icon.render('trash', 13)}
             </button>
           </div>
         </div>
         ${ev.hora_inicio ? `<span class="time-pill">${ev.hora_inicio}${ev.hora_fin ? ' → ' + ev.hora_fin : ''}</span>` : ''}
-        ${ev.notas ? `<p class="text-xs text-slate-400 mt-1 line-clamp-2">${escHtml(ev.notas)}</p>` : ''}
-        <div class="mt-1.5">${renderPriorityBadge(ev.prioridad)}</div>
+        ${ev.notas ? `<p style="font-size:.72rem;color:#888;margin-top:.25rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(ev.notas)}</p>` : ''}
+        <div style="margin-top:.375rem;">${renderPriorityBadge(ev.prioridad)}</div>
       </div>
     </div>
   `).join('');
@@ -281,33 +278,33 @@ function renderInbox() {
   }
 
   const renderTask = (t) => `
-    <div class="item-row flex gap-3 p-2.5 group priority-${t.prioridad} ${t.estado === 'completada' ? 'task-completed' : ''}" data-id="${t.id}">
-      <input type="checkbox" class="custom-checkbox mt-0.5" ${t.estado === 'completada' ? 'checked' : ''}
+    <div class="item-row priority-${t.prioridad} ${t.estado === 'completada' ? 'task-completed' : ''}"
+         data-id="${t.id}" onclick="openEditModal('${t.id}')">
+      <input type="checkbox" class="custom-checkbox" style="margin-top:.125rem;flex-shrink:0;"
+             ${t.estado === 'completada' ? 'checked' : ''}
+             onclick="event.stopPropagation()"
              onchange="toggleComplete('${t.id}', this.checked)">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-start justify-between gap-1 min-w-0">
-          <p class="task-title text-sm font-medium truncate flex-1 min-w-0" style="color:#ccc;">${escHtml(t.titulo)}</p>
-          <div class="flex items-center gap-1 flex-shrink-0 ml-1">
+      <div class="item-body">
+        <div class="item-title-row">
+          <p class="item-title ${t.estado === 'completada' ? 'task-completed' : ''}">${escHtml(t.titulo)}</p>
+          <div class="item-actions">
             ${renderAlertIcons(t)}
-            <button onclick="openEditModal('${t.id}')" class="action-btn-hover text-slate-500 hover:text-indigo-400">
-              ${Icon.render('edit', 13)}
-            </button>
-            <button onclick="deleteRow('${t.id}')" class="action-btn-hover text-slate-500 hover:text-red-400">
+            <button onclick="event.stopPropagation(); deleteRow('${t.id}')" class="delete-btn">
               ${Icon.render('trash', 13)}
             </button>
           </div>
         </div>
-        ${t.fecha && t.fecha !== today() ? `<p class="text-xs text-slate-500 mt-0.5">${Icon.render('calendar', 11, 'inline-block mr-0.5')}${t.fecha}</p>` : ''}
-        ${t.notas ? `<p class="text-xs text-slate-400 mt-0.5 line-clamp-1">${escHtml(t.notas)}</p>` : ''}
-        <div class="mt-1">${renderPriorityBadge(t.prioridad)}</div>
+        ${t.fecha && t.fecha !== today() ? `<p style="font-size:.7rem;color:#666;margin-top:.2rem;">${Icon.render('calendar', 10, 'inline-block')} ${t.fecha}</p>` : ''}
+        ${t.notas ? `<p style="font-size:.72rem;color:#888;margin-top:.2rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escHtml(t.notas)}</p>` : ''}
+        <div style="margin-top:.3rem;">${renderPriorityBadge(t.prioridad)}</div>
       </div>
     </div>
   `;
 
   container.innerHTML = pending.map(renderTask).join('') +
     (completed.length ? `
-      <div class="mt-3 pt-3 border-t border-slate-800">
-        <p class="text-xs text-slate-600 mb-2 uppercase tracking-widest">Completadas (${completed.length})</p>
+      <div style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);">
+        <p style="font-size:.65rem;color:#444;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.08em;">Completadas (${completed.length})</p>
         ${completed.map(renderTask).join('')}
       </div>` : '');
 }

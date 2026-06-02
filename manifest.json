@@ -1,19 +1,19 @@
 {
-  "name": "Agenda Corporativa",
-  "short_name": "Agenda",
-  "description": "Agenda corporativa PWA con sincronización GitHub",
+  "name": "Agenda SM Academia",
+  "short_name": "SM Agenda",
+  "description": "Agenda corporativa SM Academia con sincronización GitHub",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "icon-512.svg",
