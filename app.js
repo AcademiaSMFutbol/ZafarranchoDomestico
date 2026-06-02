@@ -208,10 +208,13 @@ function renderPriorityBadge(p) {
 }
 
 function renderAlertIcons(row) {
-  const icons = [];
-  if (row.push_activo  === 'true') icons.push(Icon.render('bell',  13, 'text-amber-400 inline-block'));
-  if (row.email_activo === 'true') icons.push(Icon.render('mail',  13, 'text-indigo-400 inline-block'));
-  return icons.join(' ');
+  // Puntos de colores compactos — no ocupan espacio en la fila del título
+  const dots = [];
+  if (row.push_activo  === 'true') dots.push('<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;" title="Push activo"></span>');
+  if (row.email_activo === 'true') dots.push('<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;" title="Email activo"></span>');
+  return dots.length
+    ? `<span style="display:inline-flex;gap:3px;align-items:center;margin-left:.25rem;">${dots.join('')}</span>`
+    : '';
 }
 
 // ── Timeline (Today's events) ────────────────────────────────────
@@ -241,11 +244,10 @@ function renderTimeline() {
       </div>
       <div class="item-body">
         <div class="item-title-row">
-          <p class="item-title">${escHtml(ev.titulo)}</p>
+          <p class="item-title">${escHtml(ev.titulo)}${renderAlertIcons(ev)}</p>
           <div class="item-actions">
-            ${renderAlertIcons(ev)}
             <button onclick="event.stopPropagation(); deleteRow('${ev.id}')" class="delete-btn">
-              ${Icon.render('trash', 13)}
+              ${Icon.render('trash', 14)}
             </button>
           </div>
         </div>
@@ -286,11 +288,10 @@ function renderInbox() {
              onchange="toggleComplete('${t.id}', this.checked)">
       <div class="item-body">
         <div class="item-title-row">
-          <p class="item-title ${t.estado === 'completada' ? 'task-completed' : ''}">${escHtml(t.titulo)}</p>
+          <p class="item-title ${t.estado === 'completada' ? 'task-completed' : ''}">${escHtml(t.titulo)}${renderAlertIcons(t)}</p>
           <div class="item-actions">
-            ${renderAlertIcons(t)}
             <button onclick="event.stopPropagation(); deleteRow('${t.id}')" class="delete-btn">
-              ${Icon.render('trash', 13)}
+              ${Icon.render('trash', 14)}
             </button>
           </div>
         </div>

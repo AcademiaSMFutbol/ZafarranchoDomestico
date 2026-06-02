@@ -192,7 +192,7 @@ main {
   cursor: pointer;
   transition: background .12s;
   width: 100%;
-  overflow: hidden;
+  /* sin overflow:hidden — el título hace su propio truncado */
 }
 .item-row:hover  { background: var(--surface2); }
 .item-row:active { background: #1a1a1a; }
@@ -202,19 +202,23 @@ main {
 .priority-media { border-left: 3px solid var(--amber); padding-left: .375rem; }
 .priority-baja  { border-left: 3px solid #2a2a2a; padding-left: .375rem; }
 
-.item-body { flex: 1; min-width: 0; overflow: hidden; }
+.item-body {
+  flex: 1;
+  min-width: 0;
+  /* sin overflow:hidden — el hijo .item-title hace el truncado */
+}
 
 .item-title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;        /* centrar verticalmente */
   justify-content: space-between;
-  gap: .25rem;
-  min-width: 0;
+  gap: .375rem;
+  width: 100%;
 }
 
 .item-title {
   flex: 1;
-  min-width: 0;
+  min-width: 0;               /* imprescindible para truncar en flex */
   font-size: .8125rem;
   font-weight: 600;
   color: var(--text);
@@ -227,21 +231,29 @@ main {
   display: flex;
   align-items: center;
   gap: .25rem;
-  flex-shrink: 0;
-  margin-left: .25rem;
+  flex-shrink: 0;             /* NUNCA se encoje */
+  flex-basis: auto;
+  min-width: 28px;            /* garantiza espacio mínimo para el botón */
 }
 
-/* Botón borrar: siempre visible pero sutil */
+/* Botón borrar: siempre visible, rojo suave */
 .delete-btn {
   display: inline-flex;
-  color: var(--text-faint);
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  min-height: 26px;
+  color: #5c2222;
   padding: 3px;
-  border-radius: 4px;
+  border-radius: 5px;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: color .15s;
+  transition: color .15s, background .15s;
   line-height: 1;
+  flex-shrink: 0;
+}
+.delete-btn:hover, .delete-btn:active { color: #ef5350; background: #1a0505; }
 }
 .delete-btn:hover { color: #d32f2f; }
 
