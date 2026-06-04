@@ -209,21 +209,22 @@ main {
 
 .item-title-row {
   display: flex;
-  align-items: center;        /* centrar verticalmente */
+  align-items: flex-start;
   justify-content: space-between;
   gap: .375rem;
   width: 100%;
+  overflow: hidden;
 }
 
 .item-title {
   flex: 1;
-  min-width: 0;               /* imprescindible para truncar en flex */
+  min-width: 0;
   font-size: .8125rem;
   font-weight: 600;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
 }
 
 .item-actions {
