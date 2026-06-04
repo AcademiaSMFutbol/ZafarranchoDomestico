@@ -58,7 +58,7 @@ header {
 }
 
 /* Brand */
-.header-brand { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.header-brand { display: flex; align-items: center; gap: .5rem; min-width: 0; }
 .logo-badge { flex-shrink: 0; }
 .header-brand-text { min-width: 0; }
 .brand-label {
@@ -143,7 +143,6 @@ main {
   border-radius: 10px;
   padding: .875rem;
   width: 100%;
-  overflow: hidden;
 }
 
 /* ── Section header ──────────────────────────────────────────── */
@@ -236,14 +235,14 @@ main {
   min-width: 28px;            /* garantiza espacio mínimo para el botón */
 }
 
-/* Botón borrar: siempre visible, rojo suave */
+/* Botón borrar: siempre visible, rojo */
 .delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 26px;
   min-height: 26px;
-  color: #5c2222;
+  color: #ef4444;
   padding: 3px;
   border-radius: 5px;
   background: transparent;
@@ -253,9 +252,7 @@ main {
   line-height: 1;
   flex-shrink: 0;
 }
-.delete-btn:hover, .delete-btn:active { color: #ef5350; background: #1a0505; }
-}
-.delete-btn:hover { color: #d32f2f; }
+.delete-btn:hover, .delete-btn:active { color: #ff5252; background: #1a0505; }
 
 /* Completada */
 .task-completed { opacity: .4; }
