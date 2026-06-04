@@ -854,6 +854,9 @@ function scheduleNotifications(rows) {
       _notifTimers.set(row.id, setTimeout(fire, delay));
     }
   });
+
+  // Also delegate to SW so notifications survive tab suspension
+  scheduleNotificationsToSW(rows);
 }
 
 function fireNotif(row) {
@@ -873,6 +876,30 @@ function fireNotif(row) {
       renotify: true,
     });
   } catch(e) { console.warn('Notification error:', e); }
+}
+
+function scheduleNotificationsToSW(rows) {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  const td  = today();
+  const now = Date.now();
+  rows.forEach(row => {
+    if (row.estado === 'completada' || row.push_activo !== 'true') return;
+    let fireAt = null;
+    if (row.tipo === 'evento' && row.fecha === td && row.hora_inicio) {
+      const [h, m] = row.hora_inicio.split(':').map(Number);
+      fireAt = new Date().setHours(h, m, 0, 0) - 15 * 60 * 1000;
+    } else if (row.tipo === 'tarea' && row.fecha === td) {
+      fireAt = new Date().setHours(9, 0, 0, 0);
+    }
+    if (!fireAt || fireAt <= now) return;
+    const title = row.tipo === 'evento' ? `📅 ${row.titulo}` : `📋 ${row.titulo}`;
+    const body  = [
+      row.hora_inicio ? `🕐 ${row.hora_inicio}${row.hora_fin ? ' → ' + row.hora_fin : ''}` : null,
+      row.notas || null,
+      `Prioridad: ${row.prioridad}`,
+    ].filter(Boolean).join('\n');
+    navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_NOTIF', id: row.id, title, body, fireAt });
+  });
 }
 
 async function fireEmail(row) {
@@ -928,7 +955,10 @@ function escHtml(str) {
 // ── Date header ──────────────────────────────────────────────────
 function renderDateHeader() {
   const now = new Date();
-  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  const narrow = window.innerWidth < 480;
+  const opts = narrow
+    ? { weekday: 'short', day: 'numeric', month: 'short' }
+    : { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
   const label = now.toLocaleDateString('es-ES', opts);
   const el = document.getElementById('date-header');
   if (el) el.textContent = label.charAt(0).toUpperCase() + label.slice(1);
