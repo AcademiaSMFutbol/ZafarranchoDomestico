@@ -1,8 +1,9 @@
 /* Service Worker — Agenda Corporativa PWA */
-const CACHE = 'agenda-v8';
+const CACHE = 'agenda-v9';
 const PRECACHE = [
   './',
   './index.html',
+  './settings.html',
   './app.js',
   './styles.css',
   './manifest.json',

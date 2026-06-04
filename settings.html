@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Configuración — SM Agenda</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    .settings-section {
+      background: #0d0d0d;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 1.125rem 1rem;
+      margin-bottom: .875rem;
+    }
+    .settings-section-title {
+      font-size: .6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #444;
+      margin-bottom: .875rem;
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+    }
+    .field { margin-bottom: .875rem; }
+    .field:last-child { margin-bottom: 0; }
+    .token-wrap { position: relative; }
+    .token-wrap .form-input { padding-right: 2.5rem; }
+    .token-eye {
+      position: absolute;
+      right: .625rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+    }
+    .notif-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      background: #071a08;
+      border: 1px solid #1b4d1e;
+      border-radius: 10px;
+      padding: .75rem;
+      margin-bottom: .875rem;
+    }
+    .notif-row-text p { margin: 0; }
+    .notif-title { font-size: .875rem; font-weight: 600; color: #a5d6a7; }
+    .notif-sub   { font-size: .75rem; color: #666; margin-top: .2rem !important; }
+    .warning-banner {
+      background: #1a1000;
+      border: 1px solid #5c3a00;
+      border-radius: 10px;
+      padding: .75rem;
+      display: flex;
+      gap: .5rem;
+      color: #ffd54f;
+      font-size: .78rem;
+      margin-bottom: 1.125rem;
+    }
+    .warning-banner svg { flex-shrink: 0; margin-top: .1rem; }
+    .actions-bar {
+      position: sticky;
+      bottom: 0;
+      background: #000;
+      border-top: 1px solid #1f1f1f;
+      padding: .875rem .875rem calc(.875rem + env(safe-area-inset-bottom));
+      display: flex;
+      gap: .625rem;
+    }
+    .page-content {
+      padding: .875rem .875rem 0;
+      padding-bottom: 5rem; /* space for sticky bar */
+    }
+    .collapsible-trigger {
+      background: none;
+      border: none;
+      color: #666;
+      font-size: .78rem;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: .375rem;
+      margin-bottom: .75rem;
+    }
+    .collapsible-trigger:hover { color: #999; }
+    .collapsible-body { display: none; }
+    .collapsible-body.open { display: block; }
+    .chevron { transition: transform .2s; }
+    .chevron.open { transform: rotate(90deg); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div style="display:flex;align-items:center;gap:.625rem;min-width:0;">
+        <a href="./index.html" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #2a2a2a;border-radius:8px;color:#ccc;flex-shrink:0;text-decoration:none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </a>
+        <div style="min-width:0;">
+          <p style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#4caf50;line-height:1;">SM Academia</p>
+          <p style="font-size:.85rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Configuración</p>
+        </div>
+      </div>
+      <div style="flex-shrink:0;">
+        <svg width="38" height="38" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#fff" rx="6"/>
+          <text x="4" y="122" font-size="112" font-weight="900" fill="#2e7d32"
+                font-family="Arial Black,Impact,sans-serif"
+                stroke="#fff" stroke-width="5" paint-order="stroke">S</text>
+          <text x="72" y="122" font-size="112" font-weight="900" fill="#bbbbbb"
+                font-family="Arial Black,Impact,sans-serif"
+                stroke="#333" stroke-width="3" paint-order="stroke">M</text>
+          <rect x="4" y="133" width="192" height="60" fill="#fff" stroke="#111" stroke-width="6" rx="4"/>
+          <text x="100" y="174" font-size="29" font-weight="900" fill="#111"
+                font-family="Arial Black,Impact,sans-serif" text-anchor="middle" letter-spacing="2">ACADEMIA</text>
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="page-content">
+
+    <!-- Aviso seguridad -->
+    <div class="warning-banner">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span>El Token de Acceso Personal (PAT) se guarda <strong>únicamente en el localStorage</strong> de este navegador y nunca se expone en el código fuente.</span>
+    </div>
+
+    <!-- GitHub -->
+    <div class="settings-section">
+      <p class="settings-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+        </svg>
+        GitHub
+      </p>
+
+      <div class="field">
+        <label class="form-label" for="cfg-owner">Usuario u Organización *</label>
+        <input id="cfg-owner" class="form-input" placeholder="ej: mi-empresa" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label class="form-label" for="cfg-repo">Nombre del Repositorio *</label>
+        <input id="cfg-repo" class="form-input" placeholder="ej: agenda-corporativa" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label class="form-label" for="cfg-csv">Ruta del archivo CSV</label>
+        <input id="cfg-csv" class="form-input" placeholder="agenda.csv" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label class="form-label" for="cfg-token">Personal Access Token (PAT) *</label>
+        <div class="token-wrap">
+          <input id="cfg-token" type="password" class="form-input" placeholder="ghp_xxxxxxxxxxxx..." autocomplete="off">
+          <button type="button" class="token-eye" onclick="toggleToken()">
+            <svg id="eye-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <p style="font-size:.7rem;color:#555;margin-top:.3rem;">Scopes requeridos: <code style="color:#4ade80;">repo</code> o <code style="color:#4ade80;">contents:write</code></p>
+      </div>
+    </div>
+
+    <!-- Notificaciones push -->
+    <div class="settings-section">
+      <p class="settings-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        Notificaciones Push
+      </p>
+
+      <div class="notif-row">
+        <div class="notif-row-text">
+          <p class="notif-title">Estado del permiso</p>
+          <p id="notif-label" class="notif-sub">Comprobando…</p>
+        </div>
+        <button id="btn-notif" type="button" onclick="requestPush()" class="btn-ghost" style="font-size:.75rem;padding:.375rem .75rem;flex-shrink:0;">
+          Activar
+        </button>
+      </div>
+
+      <p style="font-size:.72rem;color:#555;line-height:1.5;">
+        Las notificaciones se programan cuando la app está abierta. Para recibir alertas con la app cerrada, mantén el Service Worker activo (la PWA instalada lo gestiona automáticamente).
+      </p>
+    </div>
+
+    <!-- Email -->
+    <div class="settings-section">
+      <p class="settings-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+        </svg>
+        Email de recordatorios
+      </p>
+
+      <div class="field">
+        <label class="form-label" for="cfg-emailTo">Email destino</label>
+        <input id="cfg-emailTo" type="email" class="form-input" placeholder="tu@email.com" autocomplete="off">
+      </div>
+
+      <!-- EmailJS (colapsable) -->
+      <button type="button" class="collapsible-trigger" onclick="toggleEjs()">
+        <svg id="ejs-chevron" class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        Configuración EmailJS
+        <span style="color:#444;">(necesario para enviar emails)</span>
+      </button>
+
+      <div id="ejs-body" class="collapsible-body">
+        <div style="border-left:2px solid #1f1f1f;padding-left:.875rem;">
+          <div class="warning-banner" style="margin-bottom:.75rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Crea cuenta gratuita en <strong>emailjs.com</strong> → Email Services → Templates. Variables requeridas: <code>to_email</code>, <code>subject</code>, <code>message</code>, <code>titulo</code>.</span>
+          </div>
+          <div class="field">
+            <label class="form-label" for="cfg-ejsService">Service ID</label>
+            <input id="cfg-ejsService" class="form-input" placeholder="service_xxxxxxx" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="form-label" for="cfg-ejsTemplate">Template ID</label>
+            <input id="cfg-ejsTemplate" class="form-input" placeholder="template_xxxxxxx" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="form-label" for="cfg-ejsKey">Public Key</label>
+            <input id="cfg-ejsKey" class="form-input" placeholder="xxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Borrar credenciales -->
+    <div id="clear-section" style="display:none;margin-bottom:.875rem;">
+      <button type="button" onclick="clearAll()" class="btn-danger" style="width:100%;display:flex;align-items:center;justify-content:center;gap:.5rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+        Borrar todas las credenciales
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Barra de acciones fija en la parte inferior -->
+  <div class="actions-bar">
+    <a href="./index.html" class="btn-ghost" style="flex:1;justify-content:center;text-decoration:none;">Cancelar</a>
+    <button type="button" onclick="saveSettings()" class="btn-primary" style="flex:2;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Guardar y Sincronizar
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"></div>
+
+  <script>
+    const CONFIG_KEY = 'agendaCorp_config';
+
+    function loadCfg() {
+      try { return JSON.parse(localStorage.getItem(CONFIG_KEY)) || {}; }
+      catch { return {}; }
+    }
+
+    function toast(msg, type = 'info', ms = 3500) {
+      const colors = { success:'toast-success', error:'toast-error', info:'toast-info' };
+      const el = document.createElement('div');
+      el.className = `toast ${colors[type] || 'toast-info'}`;
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), ms);
+    }
+
+    // ── Poblar formulario ──────────────────────────────────────────
+    function populate() {
+      const c = loadCfg();
+      document.getElementById('cfg-owner').value      = c.owner    || '';
+      document.getElementById('cfg-repo').value       = c.repo     || '';
+      document.getElementById('cfg-csv').value        = c.csvPath  || 'agenda.csv';
+      document.getElementById('cfg-token').value      = c.token    ? '••••••••••••••••••••' : '';
+      document.getElementById('cfg-emailTo').value    = c.emailTo  || '';
+      document.getElementById('cfg-ejsService').value = c.ejsService  || '';
+      document.getElementById('cfg-ejsTemplate').value= c.ejsTemplate || '';
+      document.getElementById('cfg-ejsKey').value     = c.ejsKey      || '';
+
+      if (c.token) document.getElementById('clear-section').style.display = 'block';
+      updateNotifLabel();
+    }
+
+    // ── Notificaciones ─────────────────────────────────────────────
+    function updateNotifLabel() {
+      const lbl = document.getElementById('notif-label');
+      const btn = document.getElementById('btn-notif');
+      if (!('Notification' in window)) {
+        lbl.textContent = '⚠️ No soportado en este navegador';
+        btn.style.display = 'none';
+        return;
+      }
+      const p = Notification.permission;
+      if (p === 'granted') {
+        lbl.textContent = '✅ Permiso concedido';
+        btn.disabled = true;
+        btn.style.opacity = '.4';
+      } else if (p === 'denied') {
+        lbl.textContent = '❌ Bloqueado — actívalo en los ajustes del navegador';
+        btn.style.display = 'none';
+      } else {
+        lbl.textContent = '⏳ Permiso no solicitado';
+      }
+    }
+
+    async function requestPush() {
+      if (!('Notification' in window)) return;
+      const result = await Notification.requestPermission();
+      updateNotifLabel();
+      if (result === 'granted') toast('Notificaciones activadas ✅', 'success');
+      else toast('Permiso denegado. Actívalo desde los ajustes del navegador.', 'error', 5000);
+    }
+
+    // ── Toggle token visibility ─────────────────────────────────────
+    function toggleToken() {
+      const inp = document.getElementById('cfg-token');
+      const hidden = inp.type === 'password';
+      inp.type = hidden ? 'text' : 'password';
+      document.getElementById('eye-icon').innerHTML = hidden
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+
+    // ── EmailJS collapsible ─────────────────────────────────────────
+    function toggleEjs() {
+      const body = document.getElementById('ejs-body');
+      const chevron = document.getElementById('ejs-chevron');
+      const open = body.classList.toggle('open');
+      chevron.classList.toggle('open', open);
+    }
+
+    // ── Guardar ─────────────────────────────────────────────────────
+    function saveSettings() {
+      const owner   = document.getElementById('cfg-owner').value.trim();
+      const repo    = document.getElementById('cfg-repo').value.trim();
+      const csvPath = document.getElementById('cfg-csv').value.trim() || 'agenda.csv';
+      const raw     = document.getElementById('cfg-token').value.trim();
+
+      if (!owner || !repo) { toast('Usuario y repositorio son obligatorios', 'error'); return; }
+
+      const prev  = loadCfg();
+      const token = (raw && !raw.startsWith('•')) ? raw : prev.token;
+      if (!token) { toast('El Token PAT es obligatorio', 'error'); return; }
+
+      const cfg = {
+        owner, repo, csvPath, token,
+        emailTo:     document.getElementById('cfg-emailTo').value.trim(),
+        ejsService:  document.getElementById('cfg-ejsService').value.trim(),
+        ejsTemplate: document.getElementById('cfg-ejsTemplate').value.trim(),
+        ejsKey:      document.getElementById('cfg-ejsKey').value.trim(),
+      };
+
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+
+      if (cfg.ejsKey && typeof emailjs !== 'undefined') emailjs.init(cfg.ejsKey);
+
+      toast('Guardado. Volviendo a la agenda…', 'success', 1800);
+      setTimeout(() => { window.location.href = './index.html'; }, 1900);
+    }
+
+    // ── Borrar todo ─────────────────────────────────────────────────
+    function clearAll() {
+      if (!confirm('¿Borrar todas las credenciales guardadas?')) return;
+      localStorage.removeItem(CONFIG_KEY);
+      toast('Credenciales borradas', 'info', 1500);
+      setTimeout(() => populate(), 400);
+    }
+
+    // ── Init ────────────────────────────────────────────────────────
+    populate();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+</body>
+</html>
