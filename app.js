@@ -668,8 +668,6 @@ function openSettings() {
           </div>
         </div>
 
-        </div>
-
         <!-- ── Notificaciones ──────────────────────────── -->
         <div class="mt-5 pt-5" style="border-top:1px solid #1f1f1f;">
           <p class="form-label mb-3 flex items-center gap-2">
