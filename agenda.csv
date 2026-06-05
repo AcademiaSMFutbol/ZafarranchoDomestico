@@ -4,6 +4,6 @@ id,tipo,titulo,fecha,hora_inicio,hora_fin,prioridad,estado,notas,push_activo,ema
 1779672181614-4g7qw,tarea,"Pasar los pagos a la app",2026-05-25,,,alta,pendiente,"",true,false
 1779690430374-feq69,tarea,"Revisar inscripciones campus de verano",2026-05-25,09:00,,alta,completada,"",true,false
 1779720637909-c6ukv,tarea,"Preparar semana final de actividades",2026-05-27,08:00,,media,completada,"",true,true
-1780358552763-s7s4n,tarea,"Impresión carteles campus CEIP ESCALERITAS",2026-06-02,09:00,09:30,alta,pendiente,"",false,false
+1780358552763-s7s4n,tarea,"Impresión carteles campus CEIP ESCALERITAS",2026-06-02,09:00,09:30,alta,completada,"",false,false
 1780553568831-ktaw1,tarea,"Actualizar base datos con recogida tardía",2026-06-04,09:00,11:00,alta,pendiente,"",true,true
 1780553917421-9bt17,tarea,"Comprar arcilla y témperas",2026-06-04,11:15,11:30,alta,pendiente,"",true,true
