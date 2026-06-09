@@ -7,4 +7,3 @@ id,tipo,titulo,fecha,hora_inicio,hora_fin,prioridad,estado,notas,push_activo,ema
 1780358552763-s7s4n,tarea,"Impresión carteles campus CEIP ESCALERITAS",2026-06-02,09:00,09:30,alta,completada,"",false,false
 1780553568831-ktaw1,tarea,"Actualizar base datos con recogida tardía",2026-06-04,09:00,11:00,alta,pendiente,"",true,true
 1780553917421-9bt17,tarea,"Comprar arcilla y témperas",2026-06-04,11:15,11:30,alta,completada,"",true,true
-1780658930017-a62bi,tarea,"Revisar presupuesto campus Jinámar",2026-06-05,,,alta,pendiente,"",true,true
